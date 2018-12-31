@@ -464,19 +464,72 @@ print(tips.info())
 # Using regular expressions to clean strings
 # =============================================================================
 
+#● 17 - 12345678901 - \d*
+#● $17 - $12345678901 - \$\d*
+#● $17.00 - $12345678901.42 - \$\d*\.\d*
+#● $17.89 - $12345678901.24 - \$\d*\.\d{2}
+#● $17.895 - $12345678901.999 - ^\$\d*\.\d{2}$
+#
+#$ means the match from the end of a string. so if we want to actually use $ we have to 
+#use \$. 
+#
+#we use a caret (^) The caret will tell the pattern to start the match at the 
+#beginning of the value and the dollar sign ($) will the pattern to match 
+#at the end of the value. 
+
+import re
+pattern = re.compile('\$\d*\.\d{2}')
+result = pattern.match('$17.89')
+bool(result) 
+
+# =============================================================================
+# Your job in this exercise is to define a regular expression to match US phone
+# numbers that fit the pattern of xxx-xxx-xxxx
+
+# Compile the pattern: prog
+prog = re.compile('\d{3}-\d{3}-\d{4}')
+
+# See if the pattern matches
+result = prog.match('123-456-7890')
+print(bool(result))
+
+# See if the pattern matches
+result2 = prog.match('1123-456-7890')
+print(bool(result2))
 
 
+# =============================================================================
+# Extracting numerical values from strings
+# =============================================================================
 
+#\d is the pattern required to find digits. This should be followed with a + so 
+#that the previous element is matched one or more times. This ensures that 10 is 
+#viewed as one number and not as 1 and 0
 
+# Find the numeric values: matches
+matches = re.findall('\d+', 'the recipe calls for 10 strawberries and 1 banana')
 
+# Print the matches
+print(matches)
 
+# =============================================================================
+# Pattern matching
+# =============================================================================
 
+# Write the first pattern
+pattern1 = bool(re.match(pattern='\d{3}-\d{3}-\d{4}', string='123-456-7890'))
+print(pattern1)
 
+# Write the second pattern
+pattern2 = bool(re.match(pattern='\$d*\.\d{2}', string='$123.45'))
+print(pattern2)
 
+# Write the third pattern
+#Use [A-Z] to match any capital letter followed by \w* to match an arbitrary 
+#number of alphanumeric characters.
 
-
-
-
+pattern3 = bool(re.match(pattern='[A-Z]\w*', string='Australia'))
+print(pattern3)
 
 
 
