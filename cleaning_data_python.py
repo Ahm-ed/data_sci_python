@@ -521,7 +521,7 @@ pattern1 = bool(re.match(pattern='\d{3}-\d{3}-\d{4}', string='123-456-7890'))
 print(pattern1)
 
 # Write the second pattern
-pattern2 = bool(re.match(pattern='\$d*\.\d{2}', string='$123.45'))
+pattern2 = bool(re.match(pattern='\$\d*\.\d{2}', string='$123.45'))
 print(pattern2)
 
 # Write the third pattern
@@ -531,40 +531,180 @@ print(pattern2)
 pattern3 = bool(re.match(pattern='[A-Z]\w*', string='Australia'))
 print(pattern3)
 
+# =============================================================================
+# Apply a python function across rows and columns. 
+# =============================================================================
+#accross column
+df.apply(np.mean, axis=0)
+
+# accross each row
+df.apply(np.mean, axis = 1)
+
+# =============================================================================
+
+#We want to check that the initial cost and total estimated fee to make sure it is
+#a valid monetary value, then we want to remove the dollar sign and convert it 
+#to a float and find the difference between the two values and save it to a new column. 
+#If the entry isn't a valid monetary value, return a NaN missing value.
+
+import pandas as pd 
+import re
+from numpy import NaN
+
+df = pd.read_csv('https://data.cityofnewyork.us/resource/rvhx-8trz.csv', nrows = 1000)
+
+pattern = re.compile('^\$\d*\.\d{2}$')
+
+#When we apply a function across rows of a dataframe, what gets passed into the function 
+#is the row of the data, even though we only need a few values from the row, the 
+#entire row will be passed into the function. 
+#
+#So our function will take two parameters, the row of data from our dataframe and 
+#the pattern we will use to validate monetary values. 
+#we can get the initial cost and total est fee values by slicing the row and we can
+#use an if else statement to make sure the values are valid. 
+
+def diff_money(row, pattern):
+    icost = row['initial_cost']
+    tef = row['total_est__fee']
+    
+    if bool(pattern.match(icost)) and bool(pattern.match(tef)):
+        icost = icost.replace("$", "")
+        tef = tef.replace("$", "")
+        
+        icost = float(icost)
+        tef = float(tef)
+        
+        return icost - tef
+    
+    else:
+        
+        return(NaN)
+        
+
+df['diff'] = df.apply(diff_money, axis=1, pattern=pattern)
+
+df1 = df[['initial_cost','total_est__fee', 'diff']]
+
+# =============================================================================
+# The tips dataset has been pre-loaded into a DataFrame called tips.
+# It has a 'sex' column that contains the values 'Male' or 'Female'. 
+# Your job is to write a function that will recode 'Female' to 0, 'Male' to 1, 
+# and return np.nan for all entries of 'sex' that are neither 'Female' nor 'Male'
+# =============================================================================
+
+# Here, you will apply your function over the 'sex' column
+
+# Define recode_gender()
+def recode_gender(gender):
+
+    # Return 0 if gender is 'Female'
+    if gender == 'Female':
+        return 0
+    
+    # Return 1 if gender is 'Male'
+    elif gender == 'Male':
+        return 1
+        
+    # Return np.nan    
+    else:
+        return np.nan
+
+# Apply the function to the sex column
+tips['recode'] = tips.sex.apply(recode_gender)
+
+# =============================================================================
+# Lambda functions
+# =============================================================================
+
+#Your job is to clean its 'total_dollar' column by removing the dollar sign. 
+#You'll do this using two different methods: With the .replace() method, 
+#and with regular expressions.
 
 
+# Write the lambda function using replace
+tips['total_dollar_replace'] = tips.total_dollar.apply(lambda x: x.replace('$', ''))
+
+# Write the lambda function using regular expressions. 
+# Notice that because re.findall() returns a list, you have to slice it in order to access the actual value.
+tips['total_dollar_re'] = tips.total_dollar.apply(lambda x: re.findall('\d+\.\d+', x)[0])
 
 
+# =============================================================================
+# Duplicate and missing data
+# =============================================================================
+
+# drop duplicates
+df = df.drop_duplicates()
+
+# Drop missing values
+
+df = df.dropna()
+
+# Fill missing values with .fillna() method
+
+tips_nan['sex'] = tips_nan['sex'].fillna('missing')
+
+tips_nan[['total_bill', 'size']] = tips_nan[['total_bill', 'size']].fillna(0)
+
+#Fill missing values with a test statistic
+
+mean_value = tips_nan['tip'].mean() 
+
+tips_nan['tip'] = tips_nan['tip'].fillna(mean_value)
+
+# =============================================================================
+
+# Create the new DataFrame: tracks
+tracks = billboard[['year', 'artist', 'track', 'time']]
+
+# Print info of tracks
+print(tracks.info())
+
+# Drop the duplicates: tracks_no_duplicates
+tracks_no_duplicates = tracks.drop_duplicates()
+
+# Print info of tracks
+print(tracks_no_duplicates.info())
+
+# =============================================================================
+# Filling missing data
+# =============================================================================
+
+# Calculate the mean of the Ozone column: oz_mean
+oz_mean = airquality['Ozone'].mean()
+
+# Replace all the missing values in the Ozone column with the mean
+airquality['Ozone'] = airquality['Ozone'].fillna(oz_mean)
+
+# Print the info of airquality
+print(airquality.info())
+
+# =============================================================================
+# Testing with asserts
+# =============================================================================
+
+assert 1==1 
+
+# Test a column
+
+assert df.initial_cost.notnull().all()
 
 
+## Testing a dataframe
 
+# The first .all() method will return a True or False for each column, 
+# while the second .all() method will return a single True or False
 
+# Assert that there are no missing values
+assert pd.notnull(df).all().all()
 
+# Assert that all values are >= 0
+assert (df >= 0).all().all()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# =============================================================================
+# GAPMINDER DATA
+# =============================================================================
 
 
 
