@@ -707,32 +707,200 @@ assert (df >= 0).all().all()
 # =============================================================================
 
 
+gapminder = pd.read_csv('data/life_expectancy_years.csv')
+
+# Exploratory analysis
+print(gapminder.head())
+
+print(gapminder.info())
+
+print(gapminder.describe())
+
+print(gapminder.shape)
+
+# Visualizing your data
+
+# Import matplotlib.pyplot
+import matplotlib.pyplot as plt
+
+# Create the scatter plot
+gapminder.plot(kind='scatter', x='1800', y='1899')
+
+# Specify axis labels
+plt.xlabel('Life Expectancy by Country in 1800')
+plt.ylabel('Life Expectancy by Country in 1899')
+
+# Specify axis limits
+plt.xlim(20, 55)
+plt.ylim(20, 55)
+
+# Display the plot
+plt.show()
+
+# =============================================================================
+# Thinking about the question at hand
+# =============================================================================
+
+def check_null_or_valid(row_data):
+    """Function that takes a row of data,
+    drops all missing values,
+    and checks if all remaining values are greater than or equal to 0
+    """
+    no_na = row_data.dropna()
+    numeric = pd.to_numeric(no_na)
+    ge0 = numeric >= 0
+    return ge0
+
+# Check whether the first column is 'Life expectancy'
+assert gapminder.columns[0] == 'country'
+
+# Check whether the values in the row are valid
+assert gapminder.iloc[:, 1:].apply(check_null_or_valid, axis=1).all().all()
+
+# Check that there is only one instance of each country
+assert gapminder['country'].value_counts()[0] == 1
+
+#Specifically, index 0 of .value_counts() will contain the most frequently occuring value. 
+#If this is equal to 1 for the 'Life expectancy' column, then you can be certain 
+#that no country appears more than once in the data.
+
+# =============================================================================
+# Checking data types
+# =============================================================================
+df.dtypes
+
+df['column'] = df['column'].to_numeric()
+
+df['column'] = df['column'].astype(str)
+
+# =============================================================================
+# Additional calculations and saving your data
+# =============================================================================
+
+df['new_column'] = df['column_1'] + df['column_2']
+ 
+df['new_column'] = df.apply(my_function, axis=1)
+
+# Saving dataset to csv
+df.to_csv['my_data.csv'] 
+
+#Currently, the gapminder DataFrame has a separate column for each year. 
+#What you want instead is a single column that contains the year, and a single 
+#column that represents the average life expectancy for each year and country. 
+#By having year in its own column, you can use it as a predictor variable in a 
+#later analysis.
 
 
+import pandas as pd
+import numpy as np
+
+# Melt gapminder: gapminder_melt
+gapminder_melt = pd.melt(gapminder, id_vars='country', 
+                         var_name = 'year', value_name = 'life_expectancy')
+
+# Rename the columns
+
+#gapminder_melt.columns = ['country', 'year', 'life_expectancy']
+
+# Print the head of gapminder_melt
+print(gapminder_melt.head())
 
 
+# Convert the year column to numeric
+gapminder_melt.year = pd.to_numeric(gapminder_melt['year'])
+
+# Test if country is of type object
+assert gapminder_melt.country.dtypes == np.object
+
+# Test if year is of type int64
+assert gapminder_melt.year.dtypes == np.int64
+
+# Test if life_expectancy is of type float64
+assert gapminder_melt.life_expectancy.dtypes == np.float64
+
+# =============================================================================
+# Looking at country spellings
+# =============================================================================
+
+# Create the series of countries: countries
+countries = gapminder_melt['country']
+
+# Drop all the duplicates from countries
+countries = countries.drop_duplicates()
+
+# Write the regular expression: pattern
+#Use A-Za-z to match the set of lower and upper case letters, \. to 
+#match periods, and \s to match whitespace between words.
+
+pattern = '^[A-Za-z\.\s]*$'
+
+# Create the Boolean vector: mask
+mask = countries.str.contains(pattern)
+
+# Invert the mask: mask_inverse. Invert the mask by placing a ~ before it
+mask_inverse = ~ mask
+
+# Subset countries using mask_inverse: invalid_countries
+invalid_countries = countries.loc[mask_inverse]
+
+# Print invalid_countries
+print(invalid_countries)
 
 
+# =============================================================================
+# More data cleaning and processing: Dealing with missing data and duplicates
+# =============================================================================
+
+# Assert that country does not contain any missing values
+assert pd.notnull(gapminder_melt.country).all()
+
+# Assert that year does not contain any missing values
+assert pd.notnull(gapminder_melt.year).all()
+
+# Drop the missing values
+gapminder_melt = gapminder_melt.dropna()
+
+# Print the shape of gapminder
+print(gapminder_melt.shape)
+
+# =============================================================================
+# Wrapping up
+# =============================================================================
+
+# Add first subplot
+plt.subplot(2, 1, 1) 
+
+# Create a histogram of life_expectancy
+gapminder_melt.life_expectancy.plot(kind = 'hist')
 
 
+# Group gapminder: gapminder_agg
+gapminder_agg = gapminder_melt.groupby('year')['life_expectancy'].mean()
 
+# Print the head of gapminder_agg
+print(gapminder_agg.head())
 
+# Print the tail of gapminder_agg
+print(gapminder_agg.tail())
 
+# Add second subplot
+plt.subplot(2, 1, 2)
 
+# Create a line plot of life expectancy per year
+gapminder_agg.plot(kind = 'line')
 
+# Add title and specify axis labels
+plt.title('Life expectancy over the years')
+plt.ylabel('Life expectancy')
+plt.xlabel('Year')
 
+# Display the plots
+plt.tight_layout()
+plt.show()
 
-
-
-
-
-
-
-
-
-
-
-
+# Save both DataFrames to csv files
+gapminder_melt.to_csv('data/gapminder_melt.csv')
+gapminder_agg.to_csv('data/gapminder_agg.csv')
 
 
 
