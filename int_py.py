@@ -42,6 +42,8 @@ print(doubledesc)
 
 print("I started with $" + str(savings) + " and now have $" + str(result) + ". Awesome!")
 
+print("I started with $", savings, " and now have $", result, ". Awesome!")
+
 #### Lists
 # area variables (in square meters)
 hall = 11.25
@@ -85,7 +87,7 @@ print(type(house))
 areas = ["hallway", 11.25, "kitchen", 18.0, "living room", 20.0, "bedroom", 10.75, "bathroom", 9.50]
 
 # Print out second element from areas
-print(areas[1])
+print(type(areas[1]))
 
 # Print out last element from areas
 print(areas[-1])
@@ -299,7 +301,7 @@ np_height_m = np_height_in * 0.0254
 print(np_height_m)
 
 # height and weight are available as regular lists
-weight_lb =[180, 210, 215, 190, 169, 168, 267, 166, 265, 164, 263, 162, 161 ]
+weight_lb =[180, 210, 215, 190, 169, 168, 267, 166,265, 164, 263, 162, 161 ]
 
 # Create array from height_in with metric units: np_height_m
 np_height_m = np.array(height_in) * 0.0254
@@ -321,7 +323,6 @@ print(light)
 
 # Print out BMIs of all baseball players whose BMI is below 21
 print(bmi[bmi<21])
-
 
 ## 2D Numpy arrays
 
@@ -381,12 +382,17 @@ np.std(np_baseball[:,0])
 
 ### Generating data
 
-height = np.round(np.random.normal(1.75, 0.20, 5000), 2)
+height = np.round(np.random.normal(loc = 1.75, scale = 0.20, size = 5000), 2)
 
 weight = np.round(np.random.normal(60.32, 15, 5000), 2)
 
 np_city = np.column_stack((height, weight))
 
+mean_height = np.mean(np_city[:,0])
+mean_weight = np.mean(np_city[:,1])
+corr = np.corrcoef(np_city[:,0], np_city[:,1])
+
+l = weight[height < 1.3]
 
 # Create np_height_in from np_baseball
 np_height_in = np_baseball[:,0]
@@ -433,121 +439,4 @@ print("Median height of goalkeepers: " + str(np.median(gk_heights)))
 
 # Print out the median height of other players. Replace 'None'
 print("Median height of other players: " + str(np.median(other_heights)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
