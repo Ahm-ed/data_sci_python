@@ -296,6 +296,8 @@ europe = { 'spain': { 'capital':'madrid', 'population':46.77 },
 
 
 # Print out the capital of France
+
+print(europe['france'])
 print(europe['france']['population'])
 
 # Create sub-dictionary data
@@ -372,6 +374,8 @@ print(cars[0:3])
 
 # Print out fourth, fifth and sixth observation
 print(cars[3:7])
+
+print(cars[['country', 'drives_right']][0:3])
 
 # =============================================================================
 # ### loc and iloc
@@ -528,7 +532,6 @@ else :
 # =============================================================================
 # Filtering Pandas DataFrame
 # =============================================================================
-
 
 ### Step 1: Get Column
 brics["area"] 
@@ -698,7 +701,7 @@ meas = np.array([np_height, np_weight])
 for val in meas :
  print(val) 
 
-## you see that it just list the arrays
+## you see that it just lists the arrays
 
 for val in np.nditer(meas): 
     print(val)
@@ -740,7 +743,7 @@ for lab, row in brics.iterrows():
 
 ## This creates a series on every iteration
 for lab, row in brics.iterrows() :
-    brics.loc[lab, "name_length"] = len( row["country"])
+    brics.loc[lab, "name_length"] = len(row["country"])
     
 print(brics)
     
@@ -849,7 +852,7 @@ dice = np.random.randint(1,7)
 # Finish the control construct
 if dice <= 2 :
     step = step - 1
-elif step <= 5 :
+elif dice <= 5 :
     step = step + 1
 else :
     step = step + np.random.randint(1,7)
@@ -977,7 +980,7 @@ plt.show()
 ### The coin example
 np.random.seed(123)
 final_tails = []
-for x in range(100000) :
+for x in range(10000) :
     tails = [0]
     for x in range(10) :
         coin = np.random.randint(0,2)
@@ -1046,7 +1049,7 @@ plt.show()
 all_walks = []
 
 # Simulate random walk 10 times
-for i in range(250) :
+for i in range(10) :
     random_walk = [0]
     for x in range(100) :
         step = random_walk[-1]

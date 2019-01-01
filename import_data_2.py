@@ -117,7 +117,7 @@ url = "http://www.datacamp.com/teach/documentation"
 # Packages the request, send the request and catch the response: r
 r = requests.get(url)
 
-# Extract the response: text
+# Extract the response: 
 text = r.text
 
 # Print the html
