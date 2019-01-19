@@ -347,7 +347,7 @@ print(type(np_baseball))
 print(np_baseball.shape)
 
 # Print out the 50th row of np_baseball
-print(np_baseball[49,:])
+print(np_baseball[3,:])
 
 # Select the entire second column of np_baseball: np_weight_lb
 np_weight_lb = np_baseball[:,1]

@@ -73,7 +73,7 @@ for key, value in pythonistas.items():
 
 # Iterating over file connections
 
-file = open('file.txt') 
+file = open('tweets.txt') 
 
 it = iter(file) 
 print(next(it))
@@ -297,7 +297,7 @@ print(result2 == powers)
 # =============================================================================
 
 result = [] 
-for chunk in pd.read_csv('data.csv', chunksize=1000):
+for chunk in pd.read_csv('data/country_list.csv', encoding = 'latin-1', chunksize=1000):
     result.append(sum(chunk['x']))
 
 total = sum(result) 
@@ -317,10 +317,10 @@ print(total)
 counts_dict ={}
 
 # Iterate over the file chunk by chunk
-for chunk in pd.read_csv("tweets.csv", chunksize= 10):
+for chunk in pd.read_csv("data/country_list.csv", encoding = 'latin-1', chunksize= 10):
 
     # Iterate over the column in DataFrame
-    for entry in chunk['lang']:
+    for entry in chunk['lang_name']:
         if entry in counts_dict.keys():
             counts_dict[entry] += 1
         else:
@@ -406,7 +406,7 @@ pairs_1 = []
 
 for num1 in range(0, 2):
     for num2 in range(6, 8):
-        pairs_1.append(num1, num2)
+        pairs_1.append((num1, num2))
 
 print(pairs_1)
 
@@ -553,7 +553,7 @@ def num_sequence(n):
         i += 1
 
 result = num_sequence(5) 
-print(result)
+print(list(result))
 
 
 # Create generator object: result
@@ -825,7 +825,7 @@ df.head()
 
 
 # Open a connection to the file
-with open('data/WDI_csv/WDIData.csv') as file:
+with open('data/country_list.csv') as file:
 
     # Skip the column names
     file.readline()

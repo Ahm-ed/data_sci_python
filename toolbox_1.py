@@ -206,13 +206,13 @@ print(yell2)
 # =============================================================================
 
 # Import Twitter data as DataFrame: df
-df = pd.read_csv('tweets.csv')
+df = pd.read_csv('./data/country_list.csv', encoding='latin-1')
 
 # Initialize an empty dictionary: langs_count
 langs_count = {}
 
 # Extract column from DataFrame: col
-col = df['lang']
+col = df['lang_name']
 
 # Iterate over lang column in DataFrame
 for entry in col:
@@ -268,7 +268,7 @@ def count_entries(df, col_name):
     return langs_count
 
 # Call count_entries(): result
-result = count_entries(tweets_df, "lang")
+result = count_entries(df, "lang_code")
 
 # Print the result
 print(result)
@@ -280,6 +280,8 @@ print(result)
 # 2. Local
 # 3. Built in
 # =============================================================================
+
+num = 5
 
 def func1():
     num = 3
@@ -690,10 +692,10 @@ def count_entries(df, *args):
     return cols_count
 
 # Call count_entries(): result1
-result1 = count_entries(tweets_df, 'lang')
+result1 = count_entries(df, 'lang_name')
 
 # Call count_entries(): result2
-result2 = count_entries(tweets_df, 'lang', 'source')
+result2 = count_entries(df, 'lang_name', 'lang_code')
 
 # Print result1 and result2
 print(result1)
@@ -881,7 +883,7 @@ shout_echo("particle", echo=5)
 #To get the first 2 characters in a tweet x, use x[0:2]
 
 # Select retweets from the Twitter DataFrame: result
-result = filter(lambda x:x[0:2]== 'RT', tweets_df['text'])
+result = filter(lambda x: x[0:2]== 'En', df['lang_name'])
 
 # Create list from filter object result: res_list
 res_list = list(result)
@@ -922,11 +924,11 @@ def count_entries(df, col_name='lang'):
         return cols_count
 
     # Add except block
-    except:
+    except KeyError:
         print('The DataFrame does not have a ' + col_name + ' column.')
 
 # Call count_entries(): result1
-result1 = count_entries(tweets_df, 'lang')
+result1 = count_entries(df, 'lang')
 
 # Print result1
 print(result1)

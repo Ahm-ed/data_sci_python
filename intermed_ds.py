@@ -294,7 +294,6 @@ europe = { 'spain': { 'capital':'madrid', 'population':46.77 },
            'germany': { 'capital':'berlin', 'population':80.62 },
            'norway': { 'capital':'oslo', 'population':5.084 } }
 
-
 # Print out the capital of France
 
 print(europe['france'])
@@ -1101,7 +1100,7 @@ for i in range(500) :
         if np.random.rand() <= 0.001 :
             step = 0
         random_walk.append(step)
-    all_walks.append(random_walk)
+    all_walks.append(random_walk) 
 
 # Create and plot np_aw_t
 np_aw_t = np.transpose(np.array(all_walks))
