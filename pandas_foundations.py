@@ -793,13 +793,16 @@ plt.show()
 
 # Creating data to illustrate the point
 Date = ['2015-02-02 08:30:00','2015-02-02 21:00:00', '2015-02-03 14:00:00',
-        '2015-02-04 15:30:00', '2015-02-04 22:00:00']
+        '2015-02-04 15:30:00', '2015-02-04 22:00:00', '2015-02-05 02:00:00',
+        '2015-02-05 22:00:00']
+
 Company = ['Hooli', 'Mediacore', 'Initech',
-           'Streeplex', 'Acme Coporation' ]
+           'Streeplex', 'Acme Coporation','Amin','Apple' ]
 
-Product = ['Software', 'Hardware','Software', 'Software', 'Hardware' ]
+Product = ['Software', 'Hardware','Software', 'Software', 'Hardware', 'Software',
+           'Hardware']
 
-Units = [3,9,13,13,14]
+Units = [3,9,13,13,14,19,10]
 
 list_cols = ['Date','Company', 'Product', 'Units']
 list_vals = [Date, Company, Product, Units]
@@ -895,7 +898,11 @@ time_list = list(time[0])
 temp = pd.read_csv('data/temp_list.csv', header = None)
 temp_list = list(temp[0])
 
+press = pd.read_csv('data/pressure.csv', header = None)
+press_list = list(press[0])
 
+dp = pd.read_csv('data/dewpoint.csv', header = None)
+dp_list = list(dp[0])
 
 # Prepare a format string: time_format
 time_format='%Y-%m-%d %H:%M'
@@ -906,7 +913,7 @@ time_format='%Y-%m-%d %H:%M'
 my_datetimes = pd.to_datetime(time_list, format=time_format)
 
 # Construct a pandas Series using temperature_list and my_datetimes: time_series
-time_series = pd.Series(temp_list, index=my_datetimes)
+time_series = pd.Series(temp_list,  index=my_datetimes)
 
 # Naming index
 time_series.index.name = 'Date'
@@ -959,3 +966,268 @@ sum14 = ts1 + ts4
 # =============================================================================
 # Resampling pandas time series
 # =============================================================================
+
+apple = pd.read_csv('data/aapl.csv', 
+                   index_col = 'Date', 
+                   parse_dates = True)
+
+apple.info()
+
+apple.head()
+
+# using a process called resampling we can apply statistical methods, for 
+#instance mean, sum, count, computed over different time intervals. 
+#
+#In the context of resampling, downsampling means reindexing a time series with
+#equally spaced times of lower frequency (like going from daily to weekly)
+#
+#Downsampling: reducing dateime rows to slower frequency. 
+#
+#Upsampling is the opposite like going from daily to hourly. 
+#
+#Upsampling: increase datetime rows to faster frequency. 
+
+#Here, we will use resample to get daily averages in February. 
+
+daily_mean = sales.resample('D').mean()
+
+# 3 important things to notice here
+
+#first, the method resample needs a string specifying the frequency, here 'D' stands
+#for daily. 
+#    
+#second, the resample method is chained with the mean method. It is best practice
+#to always follow resample with some statistical method in this way. 
+#
+#Third, the result is a dataframe with daily frequency for February, 2015 with 
+#the average number of units sold each day. the columns company and product are 
+#non-numerical and hence are ignored. Missing days are filled with NaN but that 
+#can be changed. 
+
+# Verifying
+
+print(daily_mean.loc['2015-02-02'])
+
+print(sales.loc['2015-02-02', 'Units'])
+
+print(sales.loc['2015-02-02', 'Units'].mean())
+
+# Method Chaining
+
+# We can build long chains of methods if we want
+sales.resample('D').sum().max()
+
+# Weekly. 
+sales.resample('W').count()
+
+# The result has 3 columns because the count() method accounts for strings also
+
+# Sampling frequencies
+
+#'min', 'T' -- minute
+#'H' -- Hour
+#'D' -- Daily
+#'B' -- Business day 
+#'W' -- Weekly
+#'M' -- Monthly
+#'Q' -- Quarter
+#'A' -- year/annual
+#
+#We can use integer multiples of these frequencies 
+
+sales.loc[:,'Units'].resample('2W').sum()
+
+# Notice the first entry is Feb 8; this is the same value as the first row 
+#when using 'W'. By default, the '2W' offset is aligned by Sundays and Feb 8 was 
+#the second Sunday of the month in 2015. 
+#
+#Up till now, we've been downsampling. Downsampling uses a coarser time index with
+#fewer samples (for instance downsampling a statistic from daily to weekly data)]
+#the opposite is upsampling; making a finer time index with more samples(for instance 
+#upsampling from daily to hourly data)
+
+two_day = sales.loc['2015-2-4':'2015-2-5', 'Units']
+
+two_day.resample('4H').sum()
+
+two_day.resample('4H').ffill()
+
+# chaining the ffill() method fills in the number of sales using the forward -fill
+#method that you've already seen. The technical term for this is interpolation. 
+#We can also use bfill() or other methods. The resulting index the represents
+#the starting time of each 4 hour increment. 
+
+# Excercies
+
+# Creating a dataframe
+dictionary = {'temperature':temp_list, 'pressure':press_list, 'dewpoint':dp_list}
+
+weather = pd.DataFrame(dictionary)
+
+weather.index = my_datetimes
+
+weather.index.name = 'datetime'
+
+# Downsample to 6 hour data and aggregate by mean: df1
+df1 = weather.loc[:, 'temperature'].resample('6H').mean()
+
+# Downsample to daily data and count the number of data points: df2
+df2 = weather.loc[:, 'temperature'].resample('D').count()
+
+# Extract temperature data for january: january
+january = weather.loc['2010-01', 'temperature']
+
+# Downsample to obtain only the daily highest temperatures in August: august_highs
+january_highs = january.resample('D').max()
+
+# Extract temperature data for February: february
+february = weather.loc['2010-02', 'temperature']
+
+# Downsample to obtain the daily lowest temperatures in February: february_lows
+february_lows = february.resample('D').min()
+
+# =============================================================================
+# Rolling mean and frequency
+# =============================================================================
+
+#Rolling means (or moving averages) are generally used to smooth out 
+#short-term fluctuations in time series data and highlight long-term trends. 
+#
+#To use the .rolling() method, you must always use method chaining, 
+#first calling .rolling() and then chaining an aggregation method after it. 
+#For example, with a Series hourly_data, hourly_data.rolling(window=24).mean()
+# would compute new values for each hourly point, based on a 24-hour window 
+# stretching out behind each point. 
+# The frequency of the output data is the same: it is still hourly. 
+# Such an operation is useful for smoothing time series data.
+
+# Extract data from 2010-Jan-01 to 2010-Jan-15: unsmoothed
+unsmoothed = weather['temperature']['2010-Jan-01':'2010-Jan-15']
+
+# Apply a rolling mean with a 24 hour window: smoothed
+smoothed = unsmoothed.rolling(window=24).mean()
+
+# Create a new DataFrame with columns smoothed and unsmoothed: jan
+jan = pd.DataFrame({'smoothed':smoothed, 'unsmoothed':unsmoothed})
+
+# Plot both smoothed and unsmoothed data using jan.plot().
+jan.plot()
+plt.show()
+
+
+# =============================================================================
+# Resample and roll with it
+# 
+# As of pandas version 0.18.0, the interface for applying rolling 
+# transformations to time series has become more consistent and flexible, 
+# and feels somewhat like a groupby (If you do not know what a groupby is, 
+# don't worry, you will learn about it in the next course!).
+# 
+# You can now flexibly chain together resampling and rolling operations.
+# =============================================================================
+
+# Extract the August 2010 data: january
+january = weather['temperature']['2010-01']
+
+# Resample to daily data, aggregating by max: daily_highs
+daily_highs = january.resample('D').max()
+
+# Use a rolling 7-day window with method chaining to smooth the daily high temperatures in August
+daily_highs_smoothed = daily_highs.rolling(window = 7).mean()
+print(daily_highs_smoothed)
+
+# =============================================================================
+# Manipulating pandas time series
+# =============================================================================
+
+# unlike previously, we won't use the date as the index
+sales_df = pd.DataFrame(data)
+sales_df['Date'] = pd.to_datetime(sales_df['Date'])
+
+# sales_df contains two columns of strings
+
+# String methods
+
+# Transform all the company names to capital letters
+
+sales_df['Company'].str.upper()
+
+# String matching
+
+sales_df['Product'].str.contains('ware')
+
+sales_df['Product'].str.contains('ware').sum()
+
+# Datetime methods
+
+sales_df['Date'].dt.hour # 0 midnight and 23 is 11pm
+
+# Setting timezones and converting from timezones
+
+# Here we are setting the timezone to US/Central. This makes the datetime
+# timezone-aware
+central = sales_df['Date'].dt.tz_localize('US/Central')
+
+# we can now convert to US/Eastern time
+
+central.dt.tz_convert('US/Eastern')
+
+# We can perform everything at once
+
+sales_df['Date'].dt.tz_localize('US/Central').dt.tz_convert('US/Eastern')
+
+# Interpolation
+
+# CReating dataframe for interpolation illustration
+
+world = pd.read_csv('data/world_population.csv')
+
+world['month'] = 12
+world['day'] = 31
+
+#Saving csv
+world.to_csv('data/world_pop.csv', index = False)
+
+world_df = pd.read_csv('data/world_pop.csv', 
+                       parse_dates = [[0,2,3]], 
+                       index_col = 'Year_month_day')
+
+# Using broadcasting to select every 10th year
+population = world_df.iloc[::10, :]
+
+#Upsample population
+# here we use resample to upsample the data for every year between 1960 to 2010
+
+population.resample('A').first()
+
+# by extracting the first value from every decade with the first() method, 
+#we see that pandas fills in NaN for years in between. Rather than ffill(), it
+#is better to use other interpolation schemes to fill the unsampled time series.
+
+# Interpolate missing data 
+
+# the method interpolate('linear') chained with resample applies linear 
+# interpolation to fill values in. 
+
+population.resample('A').first().interpolate('linear')
+
+# this yields a smooth time series with a reasonable model of yearly world
+# population. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
