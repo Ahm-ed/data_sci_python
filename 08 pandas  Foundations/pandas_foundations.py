@@ -1373,7 +1373,7 @@ plt.clf()
 
 url = 'https://raw.githubusercontent.com/wblakecannon/DataCamp/master/11-pandas-foundations/_datasets/weather_data_austin_2010.csv'
 
-austin_norm = pd.read_csv(url)
+austin_norm = pd.read_csv(url, parse_dates = True, index_col = 'Date')
 
 print(austin_norm.head())
 # Hourly Weather data from 2011
@@ -1481,20 +1481,201 @@ austin_noaa_clean['dew_point_faren'] = pd.to_numeric(austin_noaa_clean['dew_poin
 
 #Statistical exploratory data analysis
 
+#Signal min, max, median
+
+# Print the median of the dry_bulb_faren column
+print(austin_noaa_clean['dry_bulb_faren'].median())
+
+# Print the median of the dry_bulb_faren column for the time range '2011-Apr':'2011-Jun'
+print(austin_noaa_clean.loc['2011-Apr':'2011-Jun', 'dry_bulb_faren'].median())
+
+# Print the median of the dry_bulb_faren column for the month of January
+print(austin_noaa_clean.loc['2011-Jan', 'dry_bulb_faren'].median())
+
+#Signal variance
+
+#You're now ready to compare the 2011 weather data with the 30-year 
+#normals reported in 2010. You can ask questions such as, on average, 
+#how much hotter was every day in 2011 than expected from the 30-year average?
+#
+#
+#Your job is to first resample austin_noaa_clean and austin_norm by day and aggregate 
+#the mean temperatures. You will then extract the temperature related columns 
+#from each - 'dry_bulb_faren' in df_clean, and 'Temperature' 
+#in df_climate - as NumPy arrays and compute the difference.
+#
+#Notice that the indexes of df_clean and df_climate 
+#are not aligned - df_clean has dates in 2011, while df_climate has 
+#dates in 2010. This is why you extract the temperature 
+#columns as NumPy arrays. An alternative approach is to use 
+#the pandas .reset_index() method to make sure the Series align properly. 
+#You will practice this approach as well.
+
+# Downsample df_clean by day and aggregate by mean: daily_mean_2011
+daily_mean_2011 = austin_noaa_clean.resample('D').mean()
+
+# Extract the dry_bulb_faren column from daily_mean_2011 using .values: daily_temp_2011
+daily_temp_2011 = daily_mean_2011['dry_bulb_faren'].values
+
+# Downsample df_climate by day and aggregate by mean: daily_climate
+daily_climate = austin_norm.resample('D').mean()
+
+# Extract the Temperature column from daily_climate using .reset_index(): daily_temp_climate
+daily_temp_climate = daily_climate.reset_index()['Temperature']
+
+# Compute the difference between the two arrays and print the mean difference
+difference = daily_temp_2011 - daily_temp_climate
+print(difference.mean())
+
+#Sunny or cloudy
+
+#On average, how much hotter is it when the sun is shining? 
+#In this exercise, you will compare temperatures on sunny days 
+#against temperatures on overcast days.
+#
+#Your job is to use Boolean selection to filter out sunny and 
+#overcast days, and then compute the difference of the mean daily 
+#maximum temperatures between each type of day.
+#
+#The DataFrame austin_noaa_clean from previous exercises has been provided
+#for you. The column 'sky_condition' provides information about whether 
+#the day was sunny ('CLR') or overcast ('OVC').
+
+# Using df_clean, when is sky_condition 'CLR'?
+is_sky_clear = austin_noaa_clean['sky_condition']=='CLR'
+
+# Filter df_clean using is_sky_clear
+sunny = austin_noaa_clean[is_sky_clear]
+
+# Resample sunny by day then calculate the max
+sunny_daily_max = sunny.resample('D').max()
+
+# See the result
+sunny_daily_max.head()
+
+# Using df_clean, when does sky_condition contain 'OVC'?
+is_sky_overcast = austin_noaa_clean['sky_condition'].str.contains('OVC')
+
+# Filter df_clean using is_sky_overcast
+overcast = austin_noaa_clean[is_sky_overcast]
+
+# Resample overcast by day then calculate the max
+overcast_daily_max = overcast.resample('D').max()
+
+# See the result
+overcast_daily_max.head()
+
+# From previous steps
+is_sky_clear = austin_noaa_clean['sky_condition']=='CLR'
+sunny = austin_noaa_clean.loc[is_sky_clear]
+sunny_daily_max = sunny.resample('D').max()
+is_sky_overcast = austin_noaa_clean['sky_condition'].str.contains('OVC')
+overcast = austin_noaa_clean.loc[is_sky_overcast]
+overcast_daily_max = overcast.resample('D').max()
+
+# Calculate the mean of sunny_daily_max
+sunny_daily_max_mean = sunny_daily_max.mean()
+
+# Calculate the mean of overcast_daily_max
+overcast_daily_max_mean = overcast_daily_max.mean()
+
+# Print the difference (sunny minus overcast)
+print(sunny_daily_max_mean - overcast_daily_max_mean)
+
+#Weekly average temperature and visibility
+#Is there a correlation between temperature and visibility? 
+
+# Import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+
+austin_noaa_clean.visibility = pd.to_numeric(austin_noaa_clean['visibility'],
+                                             errors = 'coerce')
+
+# Select the visibility and dry_bulb_faren columns and resample them: weekly_mean
+weekly_mean = austin_noaa_clean[['visibility', 'dry_bulb_faren']].resample('W').mean()
+
+# Print the output of weekly_mean.corr()
+print(weekly_mean.corr())
+
+# Plot weekly_mean with subplots=True
+weekly_mean.plot(subplots=True)
+plt.show()
+
+#Daily hours of clear sky
+
+#The 'sky_condition' column is recorded hourly. Your job is to resample 
+#this column appropriately such that you can extract the number of sunny 
+#hours in a day and the number of total hours. Then, you can divide the 
+#number of sunny hours by the number of total hours, and generate a box 
+#plot of the resulting fraction.
 
 
+is_sky_clear = austin_noaa_clean['sky_condition'] == 'CLR'
+resampled = is_sky_clear.resample('D')
+sunny_hours = resampled.sum()
+total_hours = resampled.count()
+sunny_fraction = sunny_hours / total_hours
 
+# Make a box plot of sunny_fraction
+sunny_fraction.plot(kind='box')
+plt.show()
 
+#Heat or humidity
 
+#Dew point is a measure of relative humidity based on pressure and 
+#temperature. A dew point above 65 is considered uncomfortable while a 
+#temperature above 90 is also considered uncomfortable.
+#
+#In this exercise, you will explore the maximum temperature and dew 
+#point of each month. The columns of interest are 'dew_point_faren' and 
+#'dry_bulb_faren'. After resampling them appropriately to get the maximum 
+#temperature and dew point in each month, generate a histogram of these 
+#values as subplots. Uncomfortably, you will notice that the maximum dew 
+#point is above 65 every month!
 
+# Resample dew_point_faren and dry_bulb_faren by Month, aggregating the maximum values: monthly_max
+monthly_max = austin_noaa_clean[['dew_point_faren','dry_bulb_faren']].resample('M').max()
 
+# Generate a histogram with bins=8, alpha=0.5, subplots=True
+monthly_max.plot(kind='hist', bins=8, alpha=0.5, subplots=True)
 
+# Show the plot
+plt.show()
 
+#Probability of high temperatures
+#
+#We already know that 2011 was hotter than the climate normals for the 
+#previous thirty years. In this final exercise, you will compare the 
+#maximum temperature in August 2011 against that of the August 2010 climate 
+#normals. More specifically, you will use a CDF plot to determine the 
+#probability of the 2011 daily maximum temperature in August being above 
+#the 2010 climate normal value.
 
+#Your job is to select the maximum temperature in August in df_climate, 
+#and then maximum daily temperatures in August 2011. You will then filter 
+#out the days in August 2011 that were above the August 2010 maximum, and 
+#use this to construct a CDF plot.
+#
+#Once you've generated the CDF, notice how it shows that there was a 
+#50% probability of the 2011 daily maximum temperature in August being 5 
+#degrees above the 2010 climate normal value!
 
+# Extract the maximum temperature in August 2010 from df_climate: august_max
+august_max = austin_norm.loc['2010-Aug','Temperature'].max()
+print(august_max)
 
+# Resample August 2011 temps in df_clean by day & aggregate the max value: august_2011
+august_2011 = austin_noaa_clean.loc['2011-Aug','dry_bulb_faren'].resample('D').max()
 
+# Filter for days in august_2011 where the value exceeds august_max: august_2011_high
 
+august_2011_high = august_2011.loc[august_2011 > august_max]
+
+# Construct a CDF of august_2011_high
+august_2011_high.plot(kind='hist', density=True, cumulative=True, bins=25)
+
+# Display the plot
+plt.show()
 
 
 
