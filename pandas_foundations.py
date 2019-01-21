@@ -1067,6 +1067,8 @@ weather.index = my_datetimes
 
 weather.index.name = 'datetime'
 
+weather.to_csv('data/austin_weather.csv')
+
 # Downsample to 6 hour data and aggregate by mean: df1
 df1 = weather.loc[:, 'temperature'].resample('6H').mean()
 
@@ -1228,6 +1230,271 @@ daily_departures = dallas.resample('D').sum()
 
 # Generate the summary statistics for daily Dallas departures: stats
 stats = daily_departures.describe()
+
+
+#Missing values and interpolation
+
+# CReating data data for illustration
+
+ts1 =pd.read_csv('data/ts1.csv', delimiter = '\s+', 
+                 header = None,
+                 index_col = 0,
+                 parse_dates = True)
+
+ts2 =pd.read_csv('data/ts2.csv', delimiter = '    ',
+                 header = None,
+                 index_col = 0,
+                 engine = 'python',
+                 parse_dates = True)
+
+# Reset the index of ts2 to ts1, and then use linear interpolation 
+# to fill in the NaNs: ts2_interp
+ts2_interp = ts2.reindex(ts1.index).interpolate(how = 'linear')
+
+# Compute the absolute difference of ts1 and ts2_interp: differences 
+differences = np.abs(ts1 - ts2_interp)
+
+# Generate and print summary statistics of the differences
+print(differences.describe())
+
+# Build a Boolean mask to filter out all the 'LAX' departure flights: mask
+mask = df['Destination Airport'] == 'LAX'
+
+# Use the mask to subset the data: la
+la = df[mask]
+
+# Concatenate / Combine two columns of data to create a datetime series: times_tz_none 
+times_tz_none = pd.to_datetime( la['Date (MM/DD/YYYY)'] + ' ' + la['Wheels-off Time'] )
+
+# Localize the time to US/Central: times_tz_central
+times_tz_central = times_tz_none.dt.tz_localize('US/Central')
+
+# Convert the datetimes from US/Central to US/Pacific
+times_tz_pacific = times_tz_central.dt.tz_convert('US/Pacific')
+
+# =============================================================================
+# Visualizing pandas time series
+# =============================================================================
+
+# pandas plot
+apple['Close'].plot(title = 'Apple Stock')
+plt.ylabel('Closing price (US Dollars)')
+plt.show()
+
+# one week
+apple.loc['2014-4-1':'2014-4-7','Close'].plot(style = 'k.--', 
+         title = 'Apple Stock')
+plt.ylabel('Closing price (US Dollars)')
+plt.show()
+
+
+# Style formatting. 
+#The style format consist of 3 characters. The first one is the color (k: black)
+#The second is the marker (. is for dot) and the last character controls the 
+#line style (- for solid line)
+
+# =============================================================================
+# Color       Marker      Line
+# b: blue     o: circle   : dotted
+# g: green    *: star     –- : dashed
+# r: red      s: square
+# c: cyan     +: plus
+# 
+# =============================================================================
+
+apple.loc['2014-4-1':'2014-4-7','Close'].plot(style = 'g*--', 
+         title = 'Apple Stock')
+plt.ylabel('Closing price (US Dollars)')
+plt.show()
+
+# Area plot
+
+# using kind = 'area' plots the closing price at the end of each month, first 
+#by resampling the data
+
+apple['Close'].plot(kind = 'area', 
+         title = 'Apple Stock')
+plt.ylabel('Closing price (US Dollars)')
+plt.show()
+
+# plotting multiple columns 
+
+apple.loc['2015', ['Close','Volume']].plot(title='Apple Stock')
+plt.show()
+
+# Subplots 
+
+apple.loc['2015', ['Close','Volume']].plot(subplots = True)
+plt.show()
+
+# Excercises
+
+# Plot the raw data before setting the datetime index
+df.plot()
+plt.show()
+
+# Convert the 'Date' column into a collection of datetime objects: df.Date
+df.Date = pd.to_datetime(df.Date)
+
+# Set the index to be the converted 'Date' column.
+#Set the index to this updated 'Date' column, 
+#using df.set_index() with the optional keyword 
+#argument inplace=True, so that you don't have to assign the result 
+#back to df
+
+df.set_index('Date', inplace=True)
+
+# Re-plot the DataFrame to see that the axis is now datetime aware!
+df.plot()
+plt.show()
+
+#Plotting date ranges, partial indexing
+
+austin = pd.read_csv('data/austin_weather.csv', parse_dates = True)
+austin.set_index('datetime', inplace = True)
+
+
+# Plot the summer data
+df.Temperature['2010-Jun':'2010-Aug'].plot()
+plt.show()
+plt.clf()
+
+# Plot the one week data
+df.Temperature['2010-06-10':'2010-06-17'].plot()
+plt.show()
+plt.clf()
+
+# =============================================================================
+# Case Study - Sunlight in Austin
+# =============================================================================
+
+#Datasets
+#Climate normals of Austin, Texas from 1981 to 2010.
+
+url = 'https://raw.githubusercontent.com/wblakecannon/DataCamp/master/11-pandas-foundations/_datasets/weather_data_austin_2010.csv'
+
+austin_norm = pd.read_csv(url)
+
+print(austin_norm.head())
+# Hourly Weather data from 2011
+
+url_2 = 'https://raw.githubusercontent.com/wblakecannon/DataCamp/master/11-pandas-foundations/_datasets/NOAA_QCLCD_2011_hourly_13904.txt'
+
+austin_noaa = pd.read_csv(url_2, header = None)
+
+column_labels = 'Wban,date,Time,StationType,sky_condition,sky_conditionFlag,visibility,visibilityFlag,wx_and_obst_to_vision,wx_and_obst_to_visionFlag,dry_bulb_faren,dry_bulb_farenFlag,dry_bulb_cel,dry_bulb_celFlag,wet_bulb_faren,wet_bulb_farenFlag,wet_bulb_cel,wet_bulb_celFlag,dew_point_faren,dew_point_farenFlag,dew_point_cel,dew_point_celFlag,relative_humidity,relative_humidityFlag,wind_speed,wind_speedFlag,wind_direction,wind_directionFlag,value_for_wind_character,value_for_wind_characterFlag,station_pressure,station_pressureFlag,pressure_tendency,pressure_tendencyFlag,presschange,presschangeFlag,sea_level_pressure,sea_level_pressureFlag,record_type,hourly_precip,hourly_precipFlag,altimeter,altimeterFlag,junk'
+
+#Convert the comma separated string column_labels to a list of 
+#strings using .split(','). Assign the result to column_labels_list
+
+# Split on the comma to create a list: column_labels_list
+column_labels_list = column_labels.split(',')
+
+# Assign the new column labels to the DataFrame: df.columns
+austin_noaa.columns = column_labels_list
+
+list_to_drop = ['sky_conditionFlag',
+ 'visibilityFlag',
+ 'wx_and_obst_to_vision',
+ 'wx_and_obst_to_visionFlag',
+ 'dry_bulb_farenFlag',
+ 'dry_bulb_celFlag',
+ 'wet_bulb_farenFlag',
+ 'wet_bulb_celFlag',
+ 'dew_point_farenFlag',
+ 'dew_point_celFlag',
+ 'relative_humidityFlag',
+ 'wind_speedFlag',
+ 'wind_directionFlag',
+ 'value_for_wind_character',
+ 'value_for_wind_characterFlag',
+ 'station_pressureFlag',
+ 'pressure_tendencyFlag',
+ 'pressure_tendency',
+ 'presschange',
+ 'presschangeFlag',
+ 'sea_level_pressureFlag',
+ 'hourly_precip',
+ 'hourly_precipFlag',
+ 'altimeter',
+ 'record_type',
+ 'altimeterFlag',
+ 'junk']
+
+# Remove the appropriate columns: df_dropped
+a_noaa_dropped = austin_noaa.drop(list_to_drop, axis = 'columns')
+
+# Print the output of df_dropped.head()
+print(a_noaa_dropped.head())
+
+#Cleaning and tidying datetime data
+
+# Convert the date column to string: df_dropped['date']
+a_noaa_dropped['date'] = a_noaa_dropped.date.astype(str)
+
+# Add leading zeros to the 'Time' column. 
+# Pad leading zeros to the Time column: df_dropped['Time']
+
+a_noaa_dropped['Time'] = a_noaa_dropped['Time'].apply(lambda x:'{:0>4}'.format(x))
+
+# Concatenate the new date and Time columns: date_string
+
+date_string = a_noaa_dropped['date'] + a_noaa_dropped['Time']
+
+# Convert the date_string Series to datetime: date_times
+date_times = pd.to_datetime(date_string, format='%Y%m%d%H%M')
+
+# Set the index to be the new date_times container: df_clean
+austin_noaa_clean = a_noaa_dropped.set_index(date_times)
+
+# Print the output of df_clean.head()
+print(austin_noaa_clean.head())
+
+#Cleaning the numeric columns
+#The numeric columns contain missing values labeled as 'M'. 
+#In this exercise, your job is to transform these columns such that 
+#they contain only numeric values and interpret missing data as NaN.
+#
+#The pandas function pd.to_numeric() is ideal for this purpose: 
+#It converts a Series of values to floating-point values. 
+#Furthermore, by specifying the keyword argument errors='coerce', 
+#you can force strings like 'M' to be interpreted as NaN
+
+
+# Print the dry_bulb_faren temperature between 8 AM and 9 AM on June 20, 2011
+
+print(austin_noaa_clean.loc['2011-Jun-20 08:00':'2011-Jun-20 09:00', 'dry_bulb_faren'])
+
+# Convert the dry_bulb_faren column to numeric values: df_clean['dry_bulb_faren']
+austin_noaa_clean['dry_bulb_faren'] = pd.to_numeric(austin_noaa_clean['dry_bulb_faren'], 
+                 errors='coerce')
+
+# Print the transformed dry_bulb_faren temperature between 8 AM and 9 AM on June 20, 2011
+print(austin_noaa_clean.loc['2011-Jun-20 08:00':'2011-Jun-20 09:00', 'dry_bulb_faren'])
+
+# Convert the wind_speed and dew_point_faren columns to numeric values
+austin_noaa_clean['wind_speed'] = pd.to_numeric(austin_noaa_clean['wind_speed'], 
+        errors='coerce')
+
+austin_noaa_clean['dew_point_faren'] = pd.to_numeric(austin_noaa_clean['dew_point_faren'], 
+        errors='corece')
+
+#Statistical exploratory data analysis
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
