@@ -165,7 +165,10 @@ airquality_melt = pd.melt(frame = airquality, id_vars=['Month', 'Day'])
 print(airquality_melt.head())
 
 # Melt airquality: airquality_melt
-airquality_melt = pd.melt(airquality, id_vars=['Month', 'Day'], var_name='measurement', value_name='reading')
+airquality_melt = pd.melt(airquality, 
+                          id_vars=['Month', 'Day'], 
+                          var_name='measurement', 
+                          value_name='reading')
 
 # Print the head of airquality_melt
 print(airquality_melt.head())
@@ -240,7 +243,9 @@ print(airquality_pivot_reset.head())
 # =============================================================================
 # Pivot table the airquality_dup: airquality_pivot
 airquality_pivot = airquality_dup.pivot_table(index=['Month', 'Day'], 
-                                              columns='measurement', values='reading', aggfunc=np.mean)
+                                              columns='measurement', 
+                                              values='reading', 
+                                              aggfunc=np.mean)
 
 # Print the head of airquality_pivot before reset_index
 print(airquality_pivot.head())
@@ -277,7 +282,9 @@ print(tb_melt.head())
 #By default, this method will split a string into parts separated by a space.
 
 # Melt ebola: ebola_melt
-ebola_melt = pd.melt(ebola, id_vars=['Date', 'Day'], var_name='type_country', value_name='counts')
+ebola_melt = pd.melt(ebola, id_vars=['Date', 'Day'], 
+                     var_name='type_country', 
+                     value_name='counts')
 
 # Create the 'str_split' column
 ebola_melt['str_split'] = ebola_melt.type_country.str.split('_')
@@ -358,7 +365,7 @@ print(ebola_tidy.head())
 
 import glob
 
-csv_files = glob.glob('*.csv')
+csv_files = glob.glob('data/*.csv')
 
 print(csv_files) 
 
@@ -421,7 +428,9 @@ print(uber.head())
 # =============================================================================
 
 # Merge the DataFrames: o2o
-o2o = pd.merge(left=site, right=visited, on=None, left_on='name', right_on='site')
+o2o = pd.merge(left=site, 
+               right=visited, 
+               on=None, left_on='name', right_on='site')
 
 # Print o2o
 print(o2o)
@@ -490,7 +499,7 @@ bool(result)
 prog = re.compile('\d{3}-\d{3}-\d{4}')
 
 # See if the pattern matches
-result = prog.match('123-456-7890')
+result = prog.match('123-456-78907')
 print(bool(result))
 
 # See if the pattern matches
@@ -534,11 +543,15 @@ print(pattern3)
 # =============================================================================
 # Apply a python function across rows and columns. 
 # =============================================================================
+import seaborn as sns
+
+tips = sns.load_dataset('tips')
+
 #accross column
-df.apply(np.mean, axis=0)
+tips.iloc[:,:2].apply(np.mean, axis=0)
 
 # accross each row
-df.apply(np.mean, axis = 1)
+tips.apply(np.mean, axis = 1)
 
 # =============================================================================
 
@@ -627,7 +640,8 @@ tips['total_dollar_replace'] = tips.total_dollar.apply(lambda x: x.replace('$', 
 
 # Write the lambda function using regular expressions. 
 # Notice that because re.findall() returns a list, you have to slice it in order to access the actual value.
-tips['total_dollar_re'] = tips.total_dollar.apply(lambda x: re.findall('\d+\.\d+', x)[0])
+tips.total_bill = tips['total_bill'].astype(str)
+tips['total_dollar_re'] = tips.total_bill.apply(lambda x: re.findall('\d+\.\d+', x)[0])
 
 
 # =============================================================================

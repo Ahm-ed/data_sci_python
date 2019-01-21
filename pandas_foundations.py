@@ -85,7 +85,6 @@ df_log10 = np.log10(world_df)
 # Print original and new data containers
 [print(x, 'has type', type(eval(x))) for x in ['np_vals', 'np_vals_log10', 'world_df', 'df_log10']]
 
-
 # =============================================================================
 # Building DataFrames from scratch
 # =============================================================================
@@ -1214,7 +1213,21 @@ population.resample('A').first().interpolate('linear')
 # this yields a smooth time series with a reasonable model of yearly world
 # population. 
 
+# Exercises
 
+# Method chaining and filtering
+
+# Strip extra whitespace from the column names: df.columns
+df.columns = df.columns.str.strip()
+
+# Extract data for which the destination airport is Dallas: dallas
+dallas = df['Destination Airport'].str.contains('DAL')
+
+# Compute the total number of Dallas departures each day: daily_departures
+daily_departures = dallas.resample('D').sum()
+
+# Generate the summary statistics for daily Dallas departures: stats
+stats = daily_departures.describe()
 
 
 

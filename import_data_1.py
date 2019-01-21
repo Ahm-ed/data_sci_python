@@ -14,7 +14,7 @@
 # =============================================================================
 
 ### REading a file 
-filename = 'huck_finn.txt'
+filename = 'data/tweets.txt'
 file = open(filename, mode='r') # 'r' is to read
 text = file.read()
 file.close() ## this prevents accidental changes
@@ -27,7 +27,7 @@ file.close()
 
 ## Context manager with - best practice
 
-with open('huck_finn.txt', 'r') as file:
+with open('data/tweets.txt', 'r') as file:
     print(file.read()) 
     
 # =============================================================================
@@ -65,7 +65,7 @@ print(file.closed)
 # =============================================================================
 
 # Read & print the first 3 lines
-with open('moby_dick.txt') as file:
+with open('data/tweets.txt') as file:
     print(file.readline())
     print(file.readline())
     print(file.readline())
@@ -98,7 +98,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Assign filename to variable: file
-file = 'digits.csv'
+file = 'data/mnist_train.csv'
 
 # Load file as array: digits
 digits = np.loadtxt(file, delimiter=',')
@@ -171,7 +171,11 @@ plt.show()
 #Accessing rows and columns of structured arrays is super-intuitive: to get 
 #the ith row, merely execute data[i] and to get the column with name 'Fare', execute data['Fare']
 
-data = np.genfromtxt('titanic.csv', delimiter=',', names=True, dtype=None)
+data = np.genfromtxt('data/winequality-red.csv', 
+                     delimiter=';', 
+                     names=True, 
+                     dtype=None,
+                     encoding = None)
 
 print(np.shape(data))
 
@@ -348,9 +352,8 @@ print(df2.head())
 # Import sas7bdat package
 from sas7bdat import SAS7BDAT
 
-
 # Save file to a DataFrame: df_sas
-with SAS7BDAT('sales.sas7bdat') as file:
+with SAS7BDAT('data/ais.sas7bdat') as file:
     df_sas = file.to_data_frame()
 
 # Print head of DataFrame
@@ -671,59 +674,3 @@ df = pd.read_sql_query('SELECT * FROM PlaylistTrack INNER JOIN Track on Playlist
 
 # Print head of DataFrame
 print(df.head())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
