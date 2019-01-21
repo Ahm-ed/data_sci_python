@@ -5,8 +5,8 @@ This DataCamp course teaches how to combine statistical and machine learning tec
 
 # Courses
 
-There are 22 courses in this track
-Courses are
+There are 22 courses in this track.
+
 1. Introduction to Python
 2. Intermediate Python for Data Science
 3. Python Data Science Toolbox (Part 1)
