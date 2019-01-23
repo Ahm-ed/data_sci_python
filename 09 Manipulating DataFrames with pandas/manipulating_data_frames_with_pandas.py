@@ -403,6 +403,488 @@ election['turnout_zscore'] = turnout_zscore
 # Print the output of election.head()
 print(election.head())
 
+# =============================================================================
+# Advanced indexing
+# =============================================================================
+
+#To learn more about indexing, we need to understand what indexes are.
+#The key building blocks in pandas are indexes, series and dataframes. 
+#
+#Index: sequence of labels 
+#Series: one-dimensional numpy arrays coupled with an index with fancy labels.
+#Dataframes: 2D tables comprising series as columns sharing common indexes. 
+
+#Like the dictionary keys, pandas indexes are immutable. Like NumPy arrays,
+#indexes are homogenous in datatype.
+
+# Creating series
+
+prices = [10.70, 10.86, 10.74, 10.71, 10.79] 
+shares = pd.Series(prices) 
+
+print(shares)
+print(shares.index)
+
+# Creating indexes
+
+days = ['Mon', 'Tue', 'Wed', 'Thur', 'Fri']
+shares = pd.Series(prices, index=days)
+
+# Examine an index. We can index and slice just as with python lists
+print(shares.index)
+
+print(shares.index[2])
+
+print(shares.index[:2])
+print(shares.index[-2:])
+print(shares.index.name)
+
+# Modifying index name
+
+shares.index.name = 'weekday'
+print(shares)
+
+# An exception is raised when attempting to assign to individual index entries
+# or index slices.
+
+shares.index[2] = 'Wednesday'
+shares.index[:4] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday']
+
+# This is because index entries are immutable (like dictionary keys). This
+#restriction helps pandas optimize operations on Series and dataframes.
+
+#It is possible to reassign an index by overwriting it all at once. Notice that
+# doing so also erases the name of the index.
+
+shares.index = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] 
+print(shares) 
+
+#Unemployment data
+
+unemployment = pd.read_csv('data/unemployment.csv', delimiter = ' ')
+unemployment.head() 
+
+unemployment.info()
+
+# We see that the dataframe is indexed exactly as a numpy array
+
+# it's better to use the zipcode column as the index instead
+
+unemployment.index = unemployment['Zip']
+
+unemployment.head()
+
+# We can now delete the redundant column using del
+
+del unemployment['Zip']
+
+# Examing indexes and columns
+
+print(unemployment.index) 
+
+print(unemployment.index.name) 
+
+print(type(unemployment.index)) 
+
+print(unemployment.columns) 
+
+# We could have done
+
+unemployment = pd.read_csv('data/unemployment.csv', delimiter = ' ',
+                           index_col = 'Zip')
+
+sales = pd.read_csv('data/sales.csv', header = None, delimiter = ' ',
+                    names = ['month', 'eggs', 'salt', 'spam'],
+                    index_col = 0)
+
+#Changing index of a DataFrame
+#
+#As you saw in the previous exercise, indexes are immutable objects. 
+#This means that if you want to change or modify the index in a DataFrame, 
+#then you need to change the whole index. You will do this now, using a list 
+#comprehension to create the new index.
+
+#A list comprehension is a succinct way to generate a list in one line
+
+#The following are equivalent
+
+cubes = [i**3 for i in range(10)]
+
+cubes = []
+for i in range(10):
+    cubes.append(i**3)
+
+# Create the list of new indexes: new_idx
+new_idx = [i.upper() for i in sales.index]
+
+# Assign new_idx to sales.index
+sales.index = new_idx
+
+# Print the sales DataFrame
+print(sales)
+
+#Changing index name labels
+
+# Assign the string 'MONTHS' to sales.index.name
+sales.index.name = 'MONTHS'
+
+# Print the sales DataFrame
+print(sales)
+
+# Assign the string 'PRODUCTS' to sales.columns.name 
+sales.columns.name = 'PRODUCTS'
+
+# Print the sales dataframe again
+print(sales)
+
+#Building an index, then a DataFrame
+
+# Generate the list of months: months
+months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+
+# Assign months to sales.index
+sales.index = months
+
+# Print the modified sales DataFrame
+print(sales)
+
+#Hierarchical indexing
+
+stocks = pd.read_csv('data/stocks.csv', delimiter = ' ') 
+print(stocks)
+
+# you can see that the date is repeated 3 times for each stock symbol
+
+# Notice the default index is an integer range. The rows are not sorted sensibly
+# There are repeated values in the Date and Symbol columns
+
+# WE would prefer to use a meaningful index that uniquely identifies each row.
+# Individually, both the date and symbol are inappropriate due to repetitions.
+# We can use a tuple of symbol and date to represent each record in the table 
+# uniquely
+
+stocks = stocks.set_index(['Symbol','Date'])
+print(stocks)
+
+print(stocks.index)
+
+# We have a multi - index or hierarchical index composed of the entries from
+# the original Date and Symbol columns
+
+print(stocks.index.name) # Gives none
+
+print(stocks.index.names)
+
+# Sorting index
+
+# We need to call sort_index() to sort the dataframe. 
+
+stocks = stocks.sort_index() # Sorting is required for indexing and slicing
+
+#Indexing (individual row). Use tuple
+
+stocks.loc[('CSCO', '2016-10-04')]
+
+stocks.loc[('CSCO', '2016-10-04'), 'Volume']
+
+# Slicing outermost index
+
+stocks.loc['AAPL'] # REturns all rows corresponding to AAPL
+
+stocks.loc['CSCO':'MSFT']
+
+#Fancy indexing (outermost index)
+stocks.loc[(['AAPL', 'MSFT'], '2016-10-05'), :] 
+
+stocks.loc[(['AAPL', 'MSFT'], '2016-10-05'), 'Close'] 
+
+stocks.loc[('CSCO', ['2016-10-05', '2016-10-03']), :] 
+
+
+# Slicing (both indexes)
+
+#The tuple used for the index does not recognize slicing with colons natively.
+#To force that to work, we need to use python builtin slice explicitly
+
+stocks.loc[(slice(None), slice('2016-10-03', '2016-10-04')),:] 
+
+# This will extract all symbols for the dates 2016-10-03 to 2016-10-04 inclusive
+
+# Exercises
+
+sales_h = pd.read_csv('data/sales_hier.csv', 
+                      index_col = ['state','month'])
+
+#Extracting elements from the outermost level of a MultiIndex is just like 
+#in the case of a single-level Index. You can use the .loc[] accessor
+
+# Print sales.loc[['CA', 'TX']]
+print(sales_h.loc[['CA', 'TX']])
+
+# Print sales['CA':'TX']
+print(sales_h['CA':'TX'])
+
+#Setting & sorting a MultiIndex
+
+sales_h = pd.read_csv('data/sales_hier.csv')
+
+# Set the index to be the columns ['state', 'month']: sales
+sales = sales.set_index(['state', 'month'])
+
+# Sort the MultiIndex: sales
+sales = sales.sort_index()
+
+# Print the sales DataFrame
+print(sales)
+
+#Using .loc[] with nonunique indexes
+sales_h = pd.read_csv('data/sales_hier.csv')
+
+# Set the index to the column 'state': sales
+sales_h = sales_h.set_index('state')
+
+# Print the sales DataFrame
+print(sales_h)
+
+# Access the data from 'NY'
+print(sales_h.loc['NY'])
+
+#Indexing multiple levels of a MultiIndex
+
+sales_h = pd.read_csv('data/sales_hier.csv', 
+                      index_col = ['state','month'])
+
+
+# Look up data for NY in month 1: NY_month1
+NY_month1 = sales_h.loc[('NY', 1), :]
+
+# Look up data for CA and TX in month 2: CA_TX_month2
+CA_TX_month2 = sales_h.loc[(['CA', 'TX'], 2), :]
+
+# Look up data for all states in month 2: all_month2
+all_month2 = sales_h.loc[(slice(None), 2), :]
+
+# Chapter 3: Rearranging and reshaping data
+
+#Pivoting DataFrames
+
+trials = pd.read_csv('data/trials_01.csv', delimiter = ' ')
+
+# Reshaping by pivoting. 
+# We may want to make it easier to see the relationship between the variables.
+
+# the pivot method allows us to specify which columns to use as the index,
+#and which to use as columns in the new dataframe. we specifiy values = 'response'
+#to identify values to use in the reshaped dataframe.
+#
+#Unique values of gender become column names.
+
+trials.pivot(index = 'treatment',
+             columns = 'gender',
+             values = 'response')
+
+# When we leave out values, all the remaining values are used  as values. The
+#resulting dataframe has multi-index columns with ID and responses stratified
+#by gender
+
+z = trials.pivot(index = 'treatment',
+             columns = 'gender')
+
+z.info()
+
+#Exercises
+
+users = pd.read_csv('data/users.csv', delimiter = ' ')
+
+# Remove leading and lagging spaces from column names
+
+users.columns = users.columns.str.strip()
+
+# Pivot the users DataFrame: visitors_pivot
+visitors_pivot = users.pivot(index = 'weekday',
+                             columns = 'city',
+                             values = 'visitors')
+
+
+
+# Print the pivoted DataFrame
+print(visitors_pivot)
+
+#Pivoting all variables
+#If you do not select any particular variables, all of them will be pivoted
+
+# Pivot users with signups indexed by weekday and city: signups_pivot
+signups_pivot = users.pivot(index = 'weekday', 
+                            columns = 'city', 
+                            values = 'signups')
+
+# Print signups_pivot
+print(signups_pivot)
+
+# Pivot users pivoted by both signups and visitors: pivot
+pivot = users.pivot(index = 'weekday', columns = 'city')
+
+# Print the pivoted DataFrame
+print(pivot)
+
+#Stacking & unstacking DataFrames
+
+trials = pd.read_csv('data/trials_01.csv', delimiter = ' ')
+
+trials = trials.set_index(['treatment','gender'])
+
+# The pivot method won't work directly with this dataframe because of the 
+# multilevel index. In this case, we might want to move some of our index 
+#levels to columns, making our dataframe shorter and wider (more columns, few rows)
+
+trials_by_gender = trials.unstack(level = 'gender')
+trials_by_gender = trials.unstack(level = 1)
+
+# the data are now divided in colums by gender. This gives a similar result
+#as the pivot method. The principal difference is now that we have hierarchial
+#columns
+
+# Stacking 
+
+#The opposite of unstack is stack. This can be used to make a wide dataframe
+#thinner and longer. With unstack, you specifiy the hierarchical columns to be
+#moved to the index. 
+
+stacked = trials_by_gender.stack(level = 'gender')
+
+# WE get back to the dataframe with multi level indexing 
+
+# Suppose you want to have gender level outermost and treatment level innermost.
+#to switch index levels inplace, we use the swaplevel method. 
+
+swapped = stacked.swaplevel(0, 1) # We specify we want to swap the first and second level here
+
+# The index is still not sorted. 
+
+sorted_trials = swapped.sort_index()
+
+# EXERCISES
+
+users = pd.read_csv('data/users.csv', delimiter = ' ',
+                    index_col = ['city', 'weekday'])
+
+# Unstack users by 'weekday': byweekday
+byweekday = users.unstack(level = 'weekday')
+
+# Print the byweekday DataFrame
+print(byweekday)
+
+# Stack byweekday by 'weekday' and print it
+print(byweekday.stack('weekday'))
+
+# Unstack users by 'city': bycity
+bycity = users.unstack(level = 'city')
+
+# Print the bycity DataFrame
+print(bycity)
+
+# Stack bycity by 'city' and print it
+print(bycity.stack(level = 'city'))
+
+# Stack 'city' back into the index of bycity: newusers
+newusers = bycity.stack(level = 'city')
+
+# Swap the levels of the index of newusers: newusers
+newusers = newusers.swaplevel(0, 1)
+
+# Print newusers and verify that the index is not sorted
+print(newusers)
+
+# Sort the index of newusers: newusers
+newusers = newusers.sort_index()
+
+# Print newusers and verify that the index is now sorted
+print(newusers)
+
+# Verify /check that the new DataFrame is equal to the original (comparing that the two dataframes are the same)
+print(newusers.equals(users))
+
+# MELTING
+
+new_trials = pd.read_csv('data/trials_02.csv', delimiter = ' ')
+
+# id_vars: columns that should remain in the dataframe. use lists
+# value_vars: columns to convert to values 
+
+# if we don't like the generic names variable and values, the use 
+# var_name and value_name
+
+pd.melt(new_trials,
+        id_vars = ['treatment'],
+        value_vars = ['F', 'M'],
+        var_name = 'gender',
+        value_name = 'response')
+
+users = users.reset_index()
+visitors_by_city_weekday  = users.pivot(index = 'weekday',
+                                        columns = 'city',
+                                        values = 'visitors')
+
+# Reset the index: visitors_by_city_weekday
+visitors_by_city_weekday = visitors_by_city_weekday.reset_index()
+
+# Print visitors_by_city_weekday
+print(visitors_by_city_weekday)
+
+# Melt visitors_by_city_weekday: visitors
+visitors = pd.melt(visitors_by_city_weekday, id_vars=['weekday'], 
+                   value_name='visitors')
+
+# Print visitors
+print(visitors)
+
+#Going from wide to long
+#
+#You can move multiple columns into a single column 
+#(making the data long and skinny) by "melting" multiple columns
+
+# Melt users: skinny
+skinny = pd.melt(users, id_vars=['weekday' ,'city'])
+
+# Print skinny
+print(skinny)
+
+# =============================================================================
+# Obtaining key-value pairs with melt()
+# 
+# Sometimes, all you need is some key-value pairs, and the context does 
+# not matter. If said context is in the index, you can easily obtain what 
+# you want. For example, in the users DataFrame, the visitors and signups 
+# columns lend themselves well to being represented as key-value pairs. 
+# So if you created a hierarchical index with 'city' and 'weekday' columns as 
+# the index, you can easily extract key-value pairs for the 'visitors' and 
+# 'signups' columns by melting users and specifying col_level=0
+# =============================================================================
+
+# Set the new index: users_idx
+users_idx = users.set_index(['city', 'weekday'])
+
+# Print the users_idx DataFrame
+print(users_idx)
+
+# Obtain the key-value pairs: kv_pairs
+kv_pairs = pd.melt(users_idx, col_level=0)
+
+# Print the key-value pairs
+print(kv_pairs)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
