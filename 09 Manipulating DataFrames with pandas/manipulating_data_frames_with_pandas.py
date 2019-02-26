@@ -873,6 +873,305 @@ kv_pairs = pd.melt(users_idx, col_level=0)
 # Print the key-value pairs
 print(kv_pairs)
 
+# =============================================================================
+# Setting up a pivot table
+# 
+# Recall from the video that a pivot table allows you to see all of your 
+# variables as a function of two other variables. In this exercise, you will use 
+# the .pivot_table() method to see how the users DataFrame entries appear 
+# when presented as functions of the 'weekday' and 'city' columns. 
+# That is, with the rows indexed by 'weekday' and the columns indexed by 'city'.
+# =============================================================================
+
+# Create the DataFrame with the appropriate pivot table: by_city_day
+by_city_day = users.pivot_table(index='weekday', columns='city')
+
+# Print by_city_day
+print(by_city_day)
+
+# =============================================================================
+# Using other aggregations in pivot tables
+# 
+# You can also use aggregation functions within a pivot table by specifying 
+# the aggfunc parameter. In this exercise, you will practice using the 'count' 
+# and len aggregation functions - which produce the same result - on the users DataFrame.
+# 
+# =============================================================================
+
+# Use a pivot table to display the count of each column: count_by_weekday1
+count_by_weekday1 = users.pivot_table(index='weekday', aggfunc='count')
+
+# Print count_by_weekday
+print(count_by_weekday1)
+
+# Replace 'aggfunc='count'' with 'aggfunc=len': count_by_weekday2
+count_by_weekday2 = users.pivot_table(index='weekday', aggfunc=len)
+
+# Verify that the same result is obtained
+print('==========================================')
+print(count_by_weekday1.equals(count_by_weekday2))
+
+
+# =============================================================================
+# Using margins in pivot tables
+# 
+# Sometimes it's useful to add totals in the margins of a pivot table. 
+# You can do this with the argument margins=True. In this exercise, you will 
+# practice using margins in a pivot table along with a new aggregation function: sum.
+# =============================================================================
+
+# Create the DataFrame with the appropriate pivot table: signups_and_visitors
+signups_and_visitors = users.pivot_table(index='weekday', aggfunc=sum)
+
+# Print signups_and_visitors
+print(signups_and_visitors)
+
+# Add in the margins: signups_and_visitors_total 
+signups_and_visitors_total = users.pivot_table(index='weekday', aggfunc=sum, margins=True)
+
+# Print signups_and_visitors_total
+print(signups_and_visitors_total)
+
+
+# =============================================================================
+# Categoricals and groupby
+# =============================================================================
+
+sales = pd.DataFrame(
+        {'weekday':['Sun', 'Sun', 'Mon','Mon'],
+         'city':['Austin','Dallas','Austin','Dallas'],
+         'bread':[139, 237, 326, 456],
+         'butter':[20, 45,70,98]})
+
+# WE could do boolean filtering
+    
+sales.loc[sales['weekday']== 'Sun'].count()
+
+# Better to do Groupby
+
+sales.groupby('weekday').count()
+
+sales.groupby('weekday')['bread'].sum()
+
+sales.groupby('weekday')[['bread', 'butter']].sum()
+
+sales.groupby(['weekday', 'city']).mean()
+
+# Take note, we can use any pandas series  with the same index values 
+# in the groupby argument 
+
+customers = pd.Series(['Alice', 'Bob', 'Dave', 'Alice'])
+
+# Customers has an identical index as sales which is a range starting from 0. 
+
+sales.groupby(customers)['bread'].sum()
+
+# Categorical data 
+
+sales['weekday'].unique()
+
+# Returns an array with distinct entries
+
+sales['weekday'].value_counts()
+
+# Here we get the number of entries for each distinct category
+
+# Converting to categorical type
+sales['weekday'] = sales['weekday'].astype('category')
+
+# =============================================================================
+# Grouping by multiple columns
+# =============================================================================
+
+titanic = pd.read_csv("data/titanic.csv")
+
+# Group titanic by 'pclass'
+by_class = titanic.groupby('pclass')
+
+# Aggregate 'survived' column of by_class by count
+count_by_class = by_class['survived'].count()
+
+# Print count_by_class
+print(count_by_class)
+
+# Group titanic by 'embarked' and 'pclass'
+by_mult = titanic.groupby(['embarked','pclass'])
+
+# Aggregate 'survived' column of by_mult by count
+count_mult = by_mult['survived'].count()
+
+# Print count_mult
+print(count_mult)
+
+# =============================================================================
+# Grouping by another series
+# =============================================================================
+
+# Read life_fname into a DataFrame: life
+life = pd.read_csv('data/life_expectancy_years.csv', index_col='country')
+
+# Read regions_fname into a DataFrame: regions
+regions = pd.read_csv('data/regions_fname', index_col = 'country')
+
+# Group life by regions['region']: life_by_region
+life_by_region = life.groupby(regions['region'])
+
+# Print the mean over the '2010' column of life_by_region
+print(life_by_region['2010'].mean())
+
+#=========================
+
+sales.groupby('city')[['bread','butter']].max()
+
+# Multiple aggregation 
+
+sales.groupby('city')[['bread','butter']].agg(['max', 'sum'])
+
+# The result is displayed using a multilevel index
+
+# agg method also accepts user-defined functions or library functions 
+
+def data_range(series):
+    return series.max() - series.min()
+
+# This takes a series 
+    
+sales.groupby('city')[['bread','butter']].agg(data_range)
+
+# arg method also accepts dictionary as input. The dictionary keys are column
+# names the values are aggregation functions to apply to each column
+
+sales.groupby(customers)[['bread','butter']].agg({'bread':'sum', 'butter':data_range})
+
+# =============================================================================
+# Computing multiple aggregates of multiple columns
+# =============================================================================
+
+#The .agg() method can be used with a tuple or list of aggregations as input. 
+#When applying multiple aggregations on multiple columns, the aggregated DataFrame 
+#has a multi-level column index.
+
+# Group titanic by 'pclass': by_class
+by_class = titanic.groupby('pclass')
+
+# Select 'age' and 'fare'
+by_class_sub = by_class[['age','fare']]
+
+# Aggregate by_class_sub by 'max' and 'median': aggregated
+aggregated = by_class_sub.agg(['max', 'median'])
+
+# Print the maximum age in each class
+print(aggregated.loc[:, ('age','max')])
+
+# Print the median fare in each class
+print(aggregated.loc[:, ('fare', 'median')])
+
+# =============================================================================
+# Aggregating on index levels/fields
+# =============================================================================
+
+# Read the CSV file into a DataFrame and sort the index: gapminder
+gapminder = pd.read_csv('data/gapminder.csv', 
+                        index_col = ['Year', 'region', 'Country']).sort_index()
+
+# Group gapminder by 'Year' and 'region': by_year_region
+by_year_region = gapminder.groupby(level = ['Year', 'region'])
+
+# Define the function to compute spread: spread
+def spread(series):
+    return series.max() - series.min()
+
+# Create the dictionary: aggregator
+aggregator = {'population':'sum', 'child_mortality':'mean', 'gdp':spread}
+
+# Aggregate by_year_region using the dictionary: aggregated
+aggregated = by_year_region.agg(aggregator)
+
+# Print the last 6 entries of aggregated 
+print(aggregated.tail(6))
+
+# =============================================================================
+# Grouping on a function of the index
+# 
+# Groupby operations can also be performed on transformations of the index values. 
+# In the case of a DateTimeIndex, we can extract portions of the datetime over which to group
+# 
+# =============================================================================
+
+# Read file: sales
+sales = pd.read_csv('data/sales-feb-2015.csv', index_col= 'Date', parse_dates=True)
+
+#Is there a day of the week that is more popular for customers? 
+#To find out, you're going to use .strftime('%a') to transform the 
+#index datetime values to abbreviated days of the week.
+
+# Create a groupby object: by_day
+by_day = sales.groupby(sales.index.strftime('%a'))
+
+# Create sum: units_sum
+units_sum = by_day['Units'].sum()
+
+# Print units_sum
+print(units_sum)
+
+# =============================================================================
+# Groupby and transformation
+# =============================================================================
+
+
+#  We often want to group data and apply distinct transformations to distinct groups.
+#  Instead of aggregating after the grouping we can apply a transform method instead.
+#  This changes the dataframe entries according to a specified function in-place 
+#  without changing the index. 
+
+def zscore(series):
+    return (series - series.mean())/series.std()
+
+#This function is a transformation in that it accepts a Series as input and 
+#returns a conforming Series. 
+    
+auto = pd.read_csv('data/auto-mpg.csv')
+
+zscore(auto['mpg']).head()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
