@@ -8,6 +8,7 @@ Created on Mon Jan 21 18:34:29 2019
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 # =============================================================================
 # Indexing DataFrames
@@ -1124,6 +1125,9 @@ print(units_sum)
 #  This changes the dataframe entries according to a specified function in-place 
 #  without changing the index. 
 
+# As an example let's compute a z-score. The z score of a value is its distance
+# from the mean of its population measured in units of standard deviation
+
 def zscore(series):
     return (series - series.mean())/series.std()
 
@@ -1132,62 +1136,497 @@ def zscore(series):
     
 auto = pd.read_csv('data/auto-mpg.csv')
 
+# we apply the zscore function to the columns of auto dataframe. 
+
 zscore(auto['mpg']).head()
 
+# As an alternative, we might want to normalize the mpg data independently 
+# by year instead of over the whole population. 
+
+auto.groupby('model year')['mpg'].transform(zscore).head()
+
+#In this case, normalized by year, the MPG rating for Buick Skylark 320 is 
+#0.503753 standard deviation below average amongs cars manufactured in 1970.
+
+# The agg method applies reduction and the transform method applies a function
+# element-wise to groups. 
+
+#In some cases, split-apply-combine operations do not neatly fall into aggregation
+#or transformation. For those cases, we use apply method. 
+
+def zscore_with_year_and_name(group):
+    df = pd.DataFrame({
+            'mpg':zscore(group['mpg']),
+            'year':group['model year'],
+            'name':group['car name']})
+    return df
+
+# This transformation is too complicated for transform. So we use apply. 
+    
+auto.groupby('model year').apply(zscore_with_year_and_name).head()
 
 
+#Excercises
+
+# =============================================================================
+# Detecting outliers with Z-Scores
+# =============================================================================
+
+# you can apply a .transform() method after grouping to apply a function to 
+# groups of data independently. 
+# The z-score is also useful to find outliers: a z-score value of +/- 3 is 
+# generally considered to be an outlier.
+
+# Import zscore
+from scipy.stats import zscore
+
+# Read the CSV file into a DataFrame
+gapminder = pd.read_csv('data/gapminder.csv')
+                        
+# Group gapminder_2010: standardized
+standardized = gapminder.groupby('region')['life','fertility'].transform(zscore)
+
+# Construct a Boolean Series to identify outliers: outliers
+outliers = (standardized['life'] < -3) | (standardized['fertility'] > 3)
+
+# Filter gapminder_2010 by the outliers: gm_outliers
+gm_outliers = gapminder.loc[outliers]
+
+# Print gm_outliers
+print(gm_outliers)
+
+# =============================================================================
+# Filling missing data (imputation) by group
+# =============================================================================
+
+#Many statistical and machine learning packages cannot determine the best 
+#action to take when missing data entries are encountered. 
+#Dealing with missing data is natural in pandas (both in using the default 
+#behavior and in defining a custom behavior). 
+#You can use .groupby() and .transform() to fill missing data appropriately for each group
+
+# Create a groupby object: by_sex_class
+by_sex_class = titanic.groupby(['sex', 'pclass'])
+
+# Write a function that imputes median
+def impute_median(series):
+    return series.fillna(series.median())
+
+# Impute age and assign to titanic['age']
+titanic.age = by_sex_class['age'].transform(impute_median)
+
+# Print the output of titanic.tail(10)
+print(titanic.tail(10))
+
+# =============================================================================
+# Other transformations with .apply
+# =============================================================================
+
+#The .apply() method when used on a groupby object performs an arbitrary 
+#function on each of the groups. These functions can be aggregations, 
+#transformations or more complex workflows. The .apply() method will then combine 
+#the results in an intelligent way.
+
+#In this exercise, you're going to analyze economic disparity within regions of 
+#the world using the Gapminder data set for 2010. To do this you'll define a 
+#function to compute the aggregate spread of per capita GDP in each region 
+#and the individual country's z-score of the regional per capita GDP. You'll 
+#then select three countries - United States, Great Britain and China - to 
+#see a summary of the regional GDP and that country's z-score against the 
+#regional mean.
+
+# Read the CSV file into a DataFrame 
+gapminder = pd.read_csv('data/gapminder.csv', index_col = 'Country')
+
+gapminder_2010 = gapminder[gapminder['Year']==2010]
+
+# Group gapminder_2010 by 'region': regional
+regional = gapminder_2010.groupby('region')
+
+def disparity(gr):
+    # Compute the spread of gr['gdp']: s
+    s = gr['gdp'].max() - gr['gdp'].min()
+    # Compute the z-score of gr['gdp'] as (gr['gdp']-gr['gdp'].mean())/gr['gdp'].std(): z
+    z = (gr['gdp'] - gr['gdp'].mean())/gr['gdp'].std()
+    # Return a DataFrame with the inputs {'z(gdp)':z, 'regional spread(gdp)':s}
+    return pd.DataFrame({'z(gdp)':z , 'regional spread(gdp)':s})
 
 
+# Apply the disparity function on regional: reg_disp
+reg_disp = regional.apply(disparity)
+
+# Print the disparity of 'United States', 'United Kingdom', and 'China'
+print(reg_disp.loc[['United States','United Kingdom','China']])
+
+# =============================================================================
+# Groupby and filtering
+# =============================================================================
+
+auto = pd.read_csv('data/auto-mpg.csv')
+
+# We can group all 390 automobiles by year, select the mpg column, and compute
+# the average over each year. 
+
+auto.groupby('model year')['mpg'].mean()
+
+# What if we want the yearly average only for cars built by Chevrolet?
+# We have to filter the groups before aggregating. 
+
+# We save the output of grouping by as splitting 
+
+splitting = auto.groupby('model year')
+
+type(splitting)
+
+type(splitting.groups)
+# We see that the returned groupby object has an attribute splitting.groups 
+# that is really a dictionary. 
+
+print(splitting.groups.keys())
+
+# the keys are the years and its values are the corresponding rows of the original Dataframe. 
+
+# We can iterate over the splitting object and carry out computations 
+
+for group_name, group in splitting:
+    avg = group['mpg'].mean()
+    print(group_name, avg)
+
+# having a dataframe group for each year means we can filter before aggregating 
+
+for group_name, group in splitting:
+    avg = group.loc[group['car name'].str.contains('chevrolet'), 'mpg'].mean()
+    print(group_name, avg)
 
 
+# We can rewrite the loop as a dictionary comprehension. Saving that dictionary,
+#the keys are the years(group_names) and the values are the filter averages as computed before.
+#We can then use that dictionary to construct a pandas series with this data. 
+
+chevy_means = {year:group.loc[group['car name'].str.contains('chevrolet'), 'mpg'].mean() \
+                              for year, group in splitting}
+
+# Boolean groupby
+
+# Using a boolean series with the same index in the .groupby(), we can perform one-to-all
+# comparison. 
+
+chevy = auto['car name'].str.contains('chevrolet')
+
+auto.groupby(['model year', chevy])['mpg'].mean()
+
+# =============================================================================
+# Grouping and filtering with .apply()
+# =============================================================================
+
+#By using .apply(), you can write functions that filter rows within groups. 
+#The .apply() method will handle the iteration over individual groups and 
+#then re-combine them back into a Series or DataFrame.
+
+#In this exercise you'll take the Titanic data set and analyze survival rates from 
+#the 'C' deck, which contained the most passengers. To do this you'll group 
+#the dataset by 'sex' and then use the .apply() method on a provided user defined 
+#function which calculates the mean survival rates on the 'C' deck
+
+# Create a groupby object using titanic over the 'sex' column: by_sex
+by_sex = titanic.groupby('sex')
 
 
+def c_deck_survival(gr):
+    c_passengers = gr['cabin'].str.startswith('C').fillna(False)
+    return gr.loc[c_passengers, 'survived'].mean()
+
+# Call by_sex.apply with the function c_deck_survival
+c_surv_by_sex = by_sex.apply(c_deck_survival)
+
+# Print the survival rates
+print(c_surv_by_sex)
+
+# =============================================================================
+# Grouping and filtering with .filter()
+# =============================================================================
+
+#You can use groupby with the .filter() method to remove whole groups of rows
+# from a DataFrame based on a boolean condition.
+#
+#In this exercise, you'll take the February sales data and remove entries 
+#from companies that purchased less than or equal to 35 Units in the whole month
+
+#First, you'll identify how many units each company bought for verification. 
+#Next you'll use the .filter() method after grouping by 'Company' to remove all 
+#rows belonging to companies whose sum over the 'Units' column was less than or 
+#equal to 35. Finally, verify that the three companies whose total Units purchased 
+#were less than or equal to 35 have been filtered out from the DataFrame.
+
+# Read the CSV file into a DataFrame: sales
+sales = pd.read_csv('data/sales-feb-2015.csv', index_col='Date', parse_dates=True)
+
+# Read the CSV file into a DataFrame: sales
+sales = pd.read_csv('sales.csv', index_col='Date', parse_dates=True)
+
+# Group sales by 'Company': by_company
+by_company = sales.groupby('Company')
+
+# Compute the sum of the 'Units' of by_company: by_com_sum
+by_com_sum = by_company['Units'].sum()
+print(by_com_sum)
+
+# Filter 'Units' where the sum is > 35: by_com_filt
+by_com_filt = by_company.filter(lambda g:g['Units'].sum() > 35)
+print(by_com_filt)
+
+# =============================================================================
+# Filtering and grouping with .map()
+# =============================================================================
+
+#Sometimes, you may instead want to group by a function/transformation of a column. 
+#The key here is that the Series is indexed the same way as the DataFrame. 
+#You can also mix and match column grouping with Series grouping.
+
+#In this exercise your job is to investigate survival rates of passengers on the 
+#Titanic by 'age' and 'pclass'. In particular, the goal is to find out what 
+#fraction of children under 10 survived in each 'pclass'. 
+
+# Create the Boolean Series: under10
+under10 = titanic['age'] < 10
+under10 = under10.map({True:'under 10', False:'over 10'})
+
+# Group by under10 and compute the survival rate
+survived_mean_1 = titanic.groupby(under10)['survived'].mean()
+print(survived_mean_1)
+
+# Group by under10 and pclass and compute the survival rate
+survived_mean_2 = titanic.groupby([under10, 'pclass'])['survived'].mean()
+print(survived_mean_2)
+
+# =============================================================================
+# Chapter 5
+# 
+# Case Study - Summer Olympics
+# =============================================================================
+
+medals = pd.read_csv('data/all_medals.csv')
+
+# =============================================================================
+# Using .value_counts() for ranking
+# =============================================================================
+
+#For this exercise, you will use the pandas Series method .value_counts() to 
+#determine the top 15 countries ranked by total number of medals.
+#
+#Notice that .value_counts() sorts by values by default.
+
+# Select the 'NOC' column of medals: country_names
+country_names = medals['NOC']
+
+# Count the number of medals won by each country: medal_counts
+medal_counts = country_names.value_counts()
+
+# We could use groupby as well
+medal_counts = medals.groupby(country_names)['Medal'].count()
+
+# Print top 15 countries ranked by medals
+print(medal_counts.head(15))
+
+# =============================================================================
+# Using .pivot_table() to count medals by type
+# 
+# Rather than ranking countries by total medals won and showing that list, 
+# you may want to see a bit more detail. You can use a pivot table to compute 
+# how many separate bronze, silver and gold medals each country won. 
+# That pivot table can then be used to repeat the previous computation to rank by 
+# total medals won.
+# =============================================================================
+
+# Construct the pivot table: counted
+counted = medals.pivot_table(index = 'NOC', values= 'Athlete',columns= 'Medal', aggfunc='count')
+
+# Create the new column: counted['totals']
+counted['totals'] = counted.sum(axis = 'columns')
+
+# Sort counted by the 'totals' column
+counted = counted.sort_values(by = 'totals',ascending= False)
+
+# Print the top 15 rows of counted
+print(counted.head(15))
+
+# =============================================================================
+# Applying .drop_duplicates()
+# =============================================================================
+
+#What could be the difference between the 'Event_gender' and 'Gender' columns? 
+#You should be able to evaluate your guess by looking at the unique values of the 
+#pairs (Event_gender, Gender) in the data. In particular, you should not see 
+#something like (Event_gender='M', Gender='Women')
+
+# Select columns: ev_gen
+ev_gen = medals[['Event_gender', 'Gender']]
+
+# Drop duplicate pairs: ev_gen_uniques
+ev_gen_uniques = ev_gen.drop_duplicates()
+
+# Print ev_gen_uniques
+print(ev_gen_uniques)
+
+# =============================================================================
+# Finding possible errors with .groupby()
+# =============================================================================
+
+#You will now use .groupby() to continue your exploration. 
+#Your job is to group by 'Event_gender' and 'Gender' and count the rows.
+
+# Group medals by the two columns: medals_by_gender
+medals_by_gender = medals.groupby(['Event_gender','Gender'])
+
+# Create a DataFrame with a group count: medal_count_by_gender
+medal_count_by_gender = medals_by_gender.count()
+
+# Print medal_count_by_gender
+print(medal_count_by_gender)
+
+#Locating suspicious data
+#You will now inspect the suspect record by locating the offending row.
+
+# Create the Boolean Series: sus
+sus = (medals.Event_gender == 'W') & (medals.Gender == 'Men')
+
+# Create a DataFrame with the suspicious row: suspect
+suspect = medals[sus]
+
+# Print suspect
+print(suspect)
+
+# =============================================================================
+# Constructing alternative country rankings
+# =============================================================================
+
+# Using .nunique() to rank by distinct sports
+
+#You may want to know which countries won medals in the most distinct sports. 
+#The .nunique() method is the principal aggregation here. Given a categorical 
+#Series S, S.nunique() returns the number of distinct categories
+
+# Group medals by 'NOC': country_grouped
+country_grouped = medals.groupby("NOC")
+
+# Compute the number of distinct sports in which each country won medals: Nsports
+Nsports = country_grouped['Sport'].nunique()
+
+# Sort the values of Nsports in descending order
+Nsports = Nsports.sort_values(ascending=False)
+
+# Print the top 15 rows of Nsports
+print(Nsports.head(15))
+
+#Interestingly, the USSR is not in the top 5 in this category, while the USA 
+#continues to remain on top. What could be the cause of this? We will compare 
+#the medal counts of USA vs. USSR more closely. 
+
+# =============================================================================
+# Counting USA vs. USSR Cold War Olympic Sports
+# =============================================================================
+
+#Your goal in this exercise is to aggregate the number of distinct sports in which 
+#the USA and the USSR won medals during the Cold War years(between 1952 and 1988)
+
+# Extract all rows for which the 'Edition' is between 1952 & 1988: during_cold_war
+during_cold_war = (medals['Edition'] >= 1952) & (medals['Edition'] <= 1988)
+
+# Extract rows for which 'NOC' is either 'USA' or 'URS': is_usa_urs
+is_usa_urs = medals.NOC.isin(['USA', 'URS'])
+
+# Use during_cold_war and is_usa_urs to create the DataFrame: cold_war_medals
+cold_war_medals = medals.loc[during_cold_war & is_usa_urs]
+
+# Group cold_war_medals by 'NOC'
+country_grouped = cold_war_medals.groupby('NOC')
+
+# Create Nsports
+Nsports = country_grouped['Sport'].nunique().sort_values(ascending = False)
+
+# Print Nsports
+print(Nsports)
+
+#As you can see, the USSR is actually higher than the US when you look only at 
+#the Olympic competitions between 1952 and 1988!
+
+# =============================================================================
+# Counting USA vs. USSR Cold War Olympic Medals
+# =============================================================================
+
+#For this exercise, you want to see which country, the USA or the USSR, won the
+# most medals consistently over the Cold War period.
+
+# Create the pivot table: medals_won_by_country
+medals_won_by_country = medals.pivot_table(index = 'Edition', values = "Athlete", columns= 'NOC', aggfunc= 'count')
+
+# Slice medals_won_by_country: cold_war_usa_urs_medals
+cold_war_usa_urs_medals = medals_won_by_country.loc[1952:1988, ['USA','URS']]
+
+# Create most_medals 
+most_medals = cold_war_usa_urs_medals.idxmax(axis = 'columns')
+
+# Print most_medals.value_counts()
+print(most_medals.value_counts())
+
+#Here, once again, the USSR comes out on top
+
+# =============================================================================
+# Visualizing USA Medal Counts by Edition: Line Plot
+# =============================================================================
+
+# Create the DataFrame: usa
+usa = medals[medals.NOC == 'USA']
+
+# Group usa by ['Edition', 'Medal'] and aggregate over 'Athlete'
+usa_medals_by_year = usa.groupby(['Edition', 'Medal'])['Athlete'].count()
+
+# Reshape usa_medals_by_year by unstacking
+usa_medals_by_year = usa_medals_by_year.unstack(level = 'Medal')
 
 
+# Plot the DataFrame usa_medals_by_year
+usa_medals_by_year.plot()
+plt.show()
 
 
+#Visualizing USA Medal Counts by Edition: Area Plot
+
+#visualize the medal counts by 'Edition' for the USA. 
+#This time, you will use an area plot to see the breakdown better. 
+
+# Create an area plot of usa_medals_by_year
+usa_medals_by_year.plot.area()
+plt.show()
 
 
+#Visualizing USA Medal Counts by Edition: Area Plot with Ordered Medals
 
+#You may have noticed that the medals are ordered according to a 
+#lexicographic (dictionary) ordering: Bronze < Gold < Silver. 
+#However, you would prefer an ordering consistent with the Olympic 
+#rules: Bronze < Silver < Gold.
+#
+#You can achieve this using Categorical types
 
+# Redefine 'Medal' as an ordered categorical
+medals.Medal = pd.Categorical(values = medals.Medal, categories=['Bronze', 
+'Silver', 'Gold'], ordered = True)
+    
+#After this, you can verify that the type has changed using 
+    
+medals.info()
 
+# Create the DataFrame: usa
+usa = medals[medals.NOC == 'USA']
 
+# Group usa by 'Edition', 'Medal', and 'Athlete'
+usa_medals_by_year = usa.groupby(['Edition', 'Medal'])['Athlete'].count()
 
+# Reshape usa_medals_by_year by unstacking
+usa_medals_by_year = usa_medals_by_year.unstack(level='Medal')
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Create an area plot of usa_medals_by_year
+usa_medals_by_year.plot.area()
+plt.show()
 
