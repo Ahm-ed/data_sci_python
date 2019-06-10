@@ -1439,7 +1439,8 @@ print(medal_counts.head(15))
 # =============================================================================
 
 # Construct the pivot table: counted
-counted = medals.pivot_table(index = 'NOC', values= 'Athlete',columns= 'Medal', aggfunc='count')
+counted = medals.pivot_table(index = 'NOC', 
+                             values= 'Athlete',columns= 'Medal', aggfunc='count')
 
 # Create the new column: counted['totals']
 counted['totals'] = counted.sum(axis = 'columns')
@@ -1558,7 +1559,9 @@ print(Nsports)
 # most medals consistently over the Cold War period.
 
 # Create the pivot table: medals_won_by_country
-medals_won_by_country = medals.pivot_table(index = 'Edition', values = "Athlete", columns= 'NOC', aggfunc= 'count')
+medals_won_by_country = medals.pivot_table(index = 'Edition', 
+                                           values = "Athlete", 
+                                           columns= 'NOC', aggfunc= 'count')
 
 # Slice medals_won_by_country: cold_war_usa_urs_medals
 cold_war_usa_urs_medals = medals_won_by_country.loc[1952:1988, ['USA','URS']]
