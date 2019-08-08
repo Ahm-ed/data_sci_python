@@ -333,13 +333,76 @@ pounds = dollars.multiply(exchange['GBP/USD'], axis = 'rows')
 # Print the head of pounds
 print(pounds.head())
 
+# =============================================================================
+# Appending pandas Series
+# =============================================================================
 
+# Import pandas
+import pandas as pd
 
+# Import pandas
+import pandas as pd
 
+# Load 'sales-jan-2015.csv' into a DataFrame: jan
+jan = pd.read_csv('data/sales-jan-2015.csv', index_col='Date', parse_dates=True)
 
+# Load 'sales-feb-2015.csv' into a DataFrame: feb
+feb = pd.read_csv('data/sales-feb-2015.csv', index_col='Date', parse_dates=True)
 
+# Load 'sales-mar-2015.csv' into a DataFrame: mar
+mar = pd.read_csv('data/sales-mar-2015.csv', index_col='Date', parse_dates=True)
 
+# Extract the 'Units' column from jan: jan_units
+jan_units = jan['Units']
 
+# Extract the 'Units' column from feb: feb_units
+feb_units = feb['Units']
+
+# Extract the 'Units' column from mar: mar_units
+mar_units = mar['Units']
+
+# Append feb_units and then mar_units to jan_units: quarter1
+quarter1 = jan_units.append(feb_units).append(mar_units)
+
+# Print the first slice from quarter1
+print(quarter1.loc['jan 27, 2015':'feb 2, 2015'])
+
+# Print the second slice from quarter1
+print(quarter1.loc['feb 26, 2015':'mar 7, 2015'])
+
+# Compute & print total sales in quarter1
+print(quarter1.sum())
+
+# =============================================================================
+# Concatenating pandas Series along row axis
+# 
+# Having learned how to append Series, you'll now learn how to achieve the same 
+# result by concatenating Series instead. You'll continue to work with the sales 
+# data you've seen previously. This time, the DataFrames jan, feb, and mar have 
+# been pre-loaded.
+# 
+# Your job is to use pd.concat() with a list of Series to achieve the same result 
+# that you would get by chaining calls to .append().
+# 
+# You may be wondering about the difference between pd.concat() and pandas
+# ' .append() method. One way to think of the difference is that .append() 
+# is a specific case of a concatenation, while pd.concat() gives you more 
+# flexibility, as you'll see in later exercises.
+# =============================================================================
+
+# Initialize empty list: units
+units = []
+
+# Build the list of Series
+for month in [jan, feb, mar]:
+    units.append(month['Units'])
+
+# Concatenate the list: quarter1
+quarter1 = pd.concat(units, axis='rows')
+
+# Print slices from quarter1
+print(quarter1.loc['jan 27, 2015':'feb 2, 2015'])
+print(quarter1.loc['feb 26, 2015':'mar 7, 2015'])
 
 
 
