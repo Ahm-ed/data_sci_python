@@ -1128,26 +1128,478 @@ print("Tuned ElasticNet l1 ratio: {}".format(gm_cv.best_params_))
 print("Tuned ElasticNet R squared: {}".format(r2))
 print("Tuned ElasticNet MSE: {}".format(mse))
 
+# =============================================================================
+# Preprocessing data
+# =============================================================================
+
+#Dealing with categorical features
+#● Scikit-learn will not accept categorical features by default
+#● Need to encode categorical features numerically
+#● Convert to ‘dummy variables’
+#● 0: Observation was NOT that category
+#● 1: Observation was that category
+#
+#Dealing with categorical features in Python
+#● scikit-learn: OneHotEncoder()
+#● pandas: get_dummies()
+
+import pandas as pd
+df = pd.read_csv('data/auto-mpg.csv')
+df_origin = pd.get_dummies(df)
+print(df_origin.head()) 
+
+df_origin = df_origin.drop('origin_Asia', axis=1)
+print(df_origin.head())
+
+# Linear regression with dummy variables
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import Ridge
+
+X_train, X_test, y_train, y_test = train_test_split(X, y,
+                                                    test_size=0.3, 
+                                                    random_state=42)
+
+ridge = Ridge(alpha=0.5, normalize=True).fit(X_train,
+             y_train)
+
+ridge.score(X_test, y_test)
+
+# =============================================================================
+# Exploring categorical features
+# 
+# The Gapminder dataset that you worked with in previous chapters also contained 
+# a categorical 'Region' feature, which we dropped in previous exercises since 
+# you did not have the tools to deal with it. Now however, you do, so we have 
+# added it back in
+# =============================================================================
+
+# Import pandas
+import pandas as pd
+
+# Read 'gapminder.csv' into a DataFrame: df
+df = pd.read_csv('data/gapminder.csv')
+df = df[df['Year'] == 1964]
+df = df.drop('Country', axis=1)
+
+# Create a boxplot of life expectancy per region
+df.boxplot('life', 'region', rot=60)
+
+#Creating dummy variables
+
+# Create dummy variables: df_region
+df_region = pd.get_dummies(df)
+
+# Print the columns of df_region
+print(df_region.columns)
+
+# Create dummy variables with drop_first=True: df_region
+df_region = pd.get_dummies(df, drop_first =True)
+
+# Print the new columns of df_region
+print(df_region.columns)
+
+#Regression with categorical features
+#
+#Having created the dummy variables from the 'Region' feature, you can build 
+#regression models as you did before. Here, you'll use ridge regression to 
+#perform 5-fold cross-validation
+
+# Import necessary modules
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import cross_val_score
+
+df_region = df_region.dropna()
+y = df_region['life'].values
+X = df_region.drop('life', axis = 1).values
+
+# Instantiate a ridge regressor: ridge
+ridge = Ridge(alpha = 0.5, normalize = True)
+
+# Perform 5-fold cross-validation: ridge_cv
+ridge_cv = cross_val_score(ridge, X, y, cv = 5)
+
+# Print the cross-validated scores
+print(ridge_cv)
+
+# =============================================================================
+# Handling missing data
+# =============================================================================
+
+df = pd.read_csv('data/diabetes.csv')
+
+print(df.head())
+# Wee that in the column insulin and and skinthickness, it seems missings are being
+# represented with zeros.
+
+# IN A PIPELINE, EACH STEP BUT THE LAST MUST BE A TRANSFORMER AND THE 
+# LAST MUST BE AN ESTIMATOR SUCH A CLASSIFIER OR REGRESSOR 
 
 
+#Dropping missing data
+
+df.Insulin.replace(0, np.nan, inplace=True)
+df.SkinThickness.replace(0, np.nan, inplace=True)
+df.BMI.replace(0, np.nan, inplace=True)
+df.info() 
+
+# =============================================================================
+# Imputing missing data
+# =============================================================================
+
+y = df['Outcome'].values
+X = df.drop('Outcome', axis = 1).values
+
+from sklearn.preprocessing import Imputer
+
+imp = Imputer(missing_values='NaN', strategy='mean', axis=0) # Axis = 0, across columns, 1 mean rows
+
+imp.fit(X)
+
+X = imp.transform(X)
+
+# =============================================================================
+# #Imputing within a pipeline
+# =============================================================================
+
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import Imputer
+
+imp = Imputer(missing_values='NaN', strategy='mean', axis=0)
+logreg = LogisticRegression()
+
+steps = [('imputation', imp),
+         ('logistic_regression', logreg)]
+
+pipeline = Pipeline(steps)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y,
+                                                    test_size=0.3, 
+                                                    random_state=42) 
+pipeline.fit(X_train, y_train)
+
+y_pred = pipeline.predict(X_test)
+pipeline.score(X_test, y_test) 
+
+# IN A PIPELINE, EACH STEP BUT THE LAST MUST BE A TRANSFORMER AND THE 
+# LAST MUST BE AN ESTIMATOR SUCH A CLASSIFIER OR REGRESSOR 
 
 
+# =============================================================================
+# Dropping missing data
+# =============================================================================
+names = ['party',
+         'handicapped-infants',
+         'water-project-cost-sharing',
+         'adoption-of-the-budget-resolution',
+         'physician-fee-freeze',
+         'el-salvador-aid',
+         'religious-groups-in-schools',
+         'anti-satellite-test-ban',
+         'aid-to-nicaraguan-contras',
+         'mx-missile',
+         'immigration',
+         'synfuels-corporation-cutback',
+         'education-spending',
+         'superfund-right-to-sue',
+         'crime',
+         'duty-free-exports',
+         'export-administration-act-south-africa']
+
+df = pd.read_csv('data/house-votes-84.data', names = names)
+
+df[df == 'y'] = 1
+df[df == 'n'] = 0
+df[df == '?'] = np.NaN
+
+# Print the number of NaNs
+print(df.isnull().sum())
+
+# Print shape of original DataFrame
+print("Shape of Original DataFrame: {}".format(df.shape))
+
+# Drop missing values and print shape of new DataFrame
+df = df.dropna()
+
+# Print shape of new DataFrame
+print("Shape of DataFrame After Dropping All Rows with Missing Values: {}".format(df.shape))
+
+# =============================================================================
+# Imputing missing data in a ML Pipeline I
+# =============================================================================
+
+#You will now be introduced to a fourth one - the Support Vector Machine, or SVM.
+
+# Import the Imputer module
+from sklearn.preprocessing import Imputer
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
+
+# Setup the Imputation transformer: imp
+imp = Imputer(missing_values='NaN', strategy='most_frequent', axis=0)
+
+# Instantiate the SVC classifier: clf
+clf = SVC()
+
+# Setup the pipeline with the required steps: steps
+steps = [('imputation', imp),
+        ('SVM', clf)]
+
+# -----------------------Full piple line ----------------------------
+
+# Import necessary modules
+from sklearn.preprocessing import Imputer
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
+
+y = df['party'].values
+X = df.drop('party', axis = 1).values
+
+# Setup the pipeline steps: steps
+steps = [('imputation', Imputer(missing_values='NaN', strategy='most_frequent', axis=0)),
+        ('SVM', SVC())]
+
+# Create the pipeline: pipeline
+pipeline = Pipeline(steps)
+
+# Create training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
+
+# Fit the pipeline to the train set
+pipeline.fit(X_train, y_train)
+
+# Predict the labels of the test set
+y_pred = pipeline.predict(X_test)
+
+# Compute metrics
+print(pipeline.score(X_test, y_test))
+
+print(classification_report(y_test, y_pred))
 
 
+# =============================================================================
+# Centering and scaling
+# =============================================================================
+
+#Why scale your data?
+#● Many models use some form of distance to inform them
+#● Features on larger scales can unduly influence the model
+#● Example: k-NN uses distance explicitly when making predictions
+#● We want features to be on a similar scale
+#● Normalizing (or scaling and centering)
+
+#Ways to normalize your data
+#● Standardization: Subtract the mean and divide by variance
+#● All features are centered around zero and have variance one
+#● Can also subtract the minimum and divide by the range
+#● Minimum zero and maximum one
+#● Can also normalize so the data ranges from -1 to +1
+#● See scikit-learn docs for further details
+
+# =============================================================================
+# Scaling in scikit-learn
+# =============================================================================
+
+from sklearn.preprocessing import scale
+
+wine = pd.read_csv('data/winequality-red.csv', delimiter = ';')
+y = wine['quality'].values
+X = wine.drop('quality', axis = 1).values
+
+X_scaled = scale(X)
+
+np.mean(X), np.std(X)
+np.mean(X_scaled), np.std(X_scaled) 
+
+# =============================================================================
+# Scaling in a pipeline
+# =============================================================================
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
+
+steps = [('scaler', StandardScaler()),
+         ('knn', KNeighborsClassifier())]
+
+pipeline = Pipeline(steps)
+X_train, X_test, y_train, y_test = train_test_split(X, y,
+                                                    test_size=0.2, 
+                                                    random_state=21)
+
+knn_scaled = pipeline.fit(X_train, y_train)
+y_pred = pipeline.predict(X_test)
+accuracy_score(y_test, y_pred)
+
+knn_unscaled = KNeighborsClassifier().fit(X_train, y_train)
+knn_unscaled.score(X_test, y_test) 
+
+# =============================================================================
+# CV and scaling in a pipeline
+# =============================================================================
+
+steps = [('scaler', StandardScaler()),
+         (('knn', KNeighborsClassifier()))]
+
+pipeline = Pipeline(steps)
+parameters = {'knn__n_neighbors':np.arange(1, 50)} # Knn double underscore followed by the name of the parameter
+
+X_train, X_test, y_train, y_test = train_test_split(X, y,
+                                                    test_size=0.2, 
+                                                    random_state=21)
+
+cv = GridSearchCV(pipeline, param_grid=parameters)
+cv.fit(X_train, y_train)
+
+y_pred = cv.predict(X_test)
+
+print(cv.best_params_)
+
+print(cv.score(X_test, y_test))
+
+print(classification_report(y_test, y_pred))
+
+# =============================================================================
+# Centering and scaling your data
+# 
+# In the video, Hugo demonstrated how significantly the performance of a model can 
+# improve if the features are scaled. Note that this is not always the case: 
+# In the Congressional voting records dataset, for example, all of the features 
+# are binary. In such a situation, scaling will have minimal impact
+# =============================================================================
 
 
+# Import scale
+from sklearn.preprocessing import scale
 
+# Scale the features: X_scaled
+X_scaled = scale(X)
 
+# Print the mean and standard deviation of the unscaled features
+print("Mean of Unscaled Features: {}".format(np.mean(X))) 
+print("Standard Deviation of Unscaled Features: {}".format(np.std(X)))
 
+# Print the mean and standard deviation of the scaled features
+print("Mean of Scaled Features: {}".format(np.mean(X_scaled))) 
+print("Standard Deviation of Scaled Features: {}".format(np.std(X_scaled)))
 
+# =============================================================================
+# Centering and scaling in a pipeline
+# 
+# With regard to whether or not scaling is effective, the proof is in the pudding!
+# =============================================================================
 
+# Import the necessary modules
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 
+# Setup the pipeline steps: steps
+steps = [('scaler', StandardScaler()),
+        ('knn', KNeighborsClassifier())]
+        
+# Create the pipeline: pipeline
+pipeline = Pipeline(steps)
 
+# Create train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
 
+# Fit the pipeline to the training set: knn_scaled
+knn_scaled = pipeline.fit(X_train, y_train)
 
+# Instantiate and fit a k-NN classifier to the unscaled data
+knn_unscaled = KNeighborsClassifier().fit(X_train, y_train)
 
+# Compute and print metrics
+print('Accuracy with Scaling: {}'.format(knn_scaled.score(X_test, y_test)))
+print('Accuracy without Scaling: {}'.format(knn_unscaled.score(X_test, y_test)))
 
+# =============================================================================
+# Bringing it all together I: Pipeline for classification
+#
+# It is time now to piece together everything you have learned so far into a 
+# pipeline for classification! Your job in this exercise is to build a pipeline 
+# that includes scaling and hyperparameter tuning to classify wine quality.
+# 
+# You'll return to using the SVM classifier you were briefly introduced to 
+# earlier in this chapter. The hyperparameters you will tune are C and gamma. 
+# C controls the regularization strength. It is analogous to the C you tuned for 
+# logistic regression in Chapter 3, while gamma controls the kernel coefficient
+# =============================================================================
 
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV
+
+# Setup the pipeline
+steps = [('scaler', StandardScaler()),
+         ('SVM', SVC())]
+
+pipeline = Pipeline(steps)
+
+# Specify the hyperparameter space
+parameters = {'SVM__C':[1, 10, 100],
+              'SVM__gamma':[0.1, 0.01]}
+
+# Create train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 21)
+
+# Instantiate the GridSearchCV object: cv
+cv = GridSearchCV(pipeline, param_grid = parameters, cv = 3)
+
+# Fit to the training set
+cv.fit(X_train, y_train)
+
+# Predict the labels of the test set: y_pred
+y_pred = cv.predict(X_test)
+
+# Compute and print metrics
+print("Accuracy: {}".format(cv.score(X_test, y_test)))
+print(classification_report(y_test, y_pred))
+print("Tuned Model Parameters: {}".format(cv.best_params_))
+
+# =============================================================================
+# Bringing it all together II: Pipeline for regression
+# 
+# For this final exercise, you will return to the Gapminder dataset. 
+# Guess what? Even this dataset has missing values that we dealt with for 
+# you in earlier chapters! Now, you have all the tools to take care of them yourself!
+# 
+# Your job is to build a pipeline that imputes the missing data, scales the 
+# features, and fits an ElasticNet to the Gapminder data. You will then tune 
+# the l1_ratio of your ElasticNet using GridSearchCV.
+# =============================================================================
+from sklearn.linear_model import ElasticNet
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import Imputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+# Setup the pipeline steps: steps
+steps = [('imputation', Imputer(missing_values='NaN', strategy='mean', axis=0)),
+         ('scaler', StandardScaler()),
+         ('elasticnet', ElasticNet())]
+
+# Create the pipeline: pipeline 
+pipeline = Pipeline(steps)
+
+# Specify the hyperparameter space
+parameters = {'elasticnet__l1_ratio':np.linspace(0,1,30)}
+
+# Create train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.4, random_state = 42)
+
+# Create the GridSearchCV object: gm_cv
+gm_cv = GridSearchCV(pipeline, param_grid=parameters)
+
+# Fit to the training set
+gm_cv.fit(X_train, y_train)
+
+# Compute and print the metrics
+r2 = gm_cv.score(X_test, y_test)
+print("Tuned ElasticNet Alpha: {}".format(gm_cv.best_params_))
+print("Tuned ElasticNet R squared: {}".format(r2))
 
 
 
