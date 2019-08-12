@@ -1081,7 +1081,7 @@ print("\nAccuracy on budget dataset: ", accuracy)
 # ● Quickly test ways of improving your submission
 # ● NLP: Stemming, stop-word removal
 # ● Model: RandomForest, k-NN, Naïve Bayes
-# ● Numeric Preprocessing: Imputation strategies
-# ● Optimization: Grid search over pipeline objects
+# ● Numeric Preprocessing: Imputation strategies eg handling NaN differently than the default imputer 
+# ● Optimization: Grid search over pipeline objects. Perform gridsearch over every object in a pipeline
 # ● Experiment with new scikit-learn techniques 
 # =============================================================================
