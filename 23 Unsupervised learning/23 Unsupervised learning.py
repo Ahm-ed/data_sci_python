@@ -1175,4 +1175,119 @@ print(ct)
 # t-SNE for 2-dimensional maps
 # =============================================================================
 
+#t-SNE for 2-dimensional maps
+#● t-SNE = “t-distributed stochastic neighbor embedding”
+#● Maps samples to 2D space (or 3D)
+#● Map approximately preserves nearness of samples
+#● Great for inspecting datasets
+
+#t-SNE has only fit_transform()
+#● Has a fit_transform() method
+#● Simultaneously fits the model and transforms the data
+#● Has no separate fit() or transform() methods
+#● Can’t extend the map to include new data samples
+#● Must start over each time!
+
+#t-SNE learning rate
+#● Choose learning rate for the dataset
+#● Wrong choice: points bunch together
+#● Try values between 50 and 200
+#
+#Different every time
+#● t-SNE features are different every time
+#● Piedmont wines, 3 runs, 3 different sca!er plots!
+#● … however: The wine varieties (=colors) have same position relative to
+#one another
+
+# Import TSNE
+from sklearn.manifold import TSNE
+
+# Create a TSNE instance: model
+model = TSNE(learning_rate = 200)
+
+# Apply fit_transform to samples: tsne_features
+tsne_features = model.fit_transform(seeds_val)
+
+# Select the 0th feature: xs
+xs = tsne_features[:,0]
+
+# Select the 1st feature: ys
+ys = tsne_features[:,1]
+
+# Scatter plot, coloring by variety_numbers
+plt.scatter(xs, ys, alpha = 0.5)
+plt.show()
+
+# =============================================================================
+# A t-SNE map of the stock market
+# =============================================================================
+
+# Import TSNE
+from sklearn.manifold import TSNE
+
+# Create a TSNE instance: model
+model = TSNE(learning_rate=50)
+
+# Apply fit_transform to normalized_movements: tsne_features
+tsne_features = model.fit_transform(normalized_movements)
+
+# Select the 0th feature: xs
+xs = tsne_features[:,0]
+
+# Select the 1th feature: ys
+ys = tsne_features[:,1]
+
+# Scatter plot
+plt.scatter(xs, ys, alpha=0.5)
+
+# Annotate the points
+for x, y, company in zip(xs, ys, companies):
+    plt.annotate(company, (x, y), fontsize=5, alpha=0.75)
+plt.show()
+
+# =============================================================================
+# Visualizing the PCA transformation
+# =============================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
