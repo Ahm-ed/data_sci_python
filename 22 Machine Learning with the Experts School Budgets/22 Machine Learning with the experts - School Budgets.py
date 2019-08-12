@@ -314,7 +314,8 @@ prediction_df = pd.DataFrame(columns=pd.get_dummies(df[LABELS]).columns,
 prediction_df.to_csv('data/predictions.csv')
 
 # Submit the predictions for scoring: score
-score = score_submission(pred_path='data/predictions.csv')
+
+# score = score_submission(pred_path='data/predictions.csv')
 
 # Print score
 print('Your model, trained with numeric data only, yields logloss score: {}'.format(score))
@@ -446,6 +447,356 @@ vec_alphanumeric.fit_transform(text_vector)
 
 # Print number of tokens of vec_alphanumeric
 print("There are {} alpha-numeric tokens in the dataset".format(len(vec_alphanumeric.get_feature_names())))
+
+# =============================================================================
+# Instantiate pipeline
+# =============================================================================
+
+# ------------Example. Do not run as data not available ----------------------
+
+#Sample data structure 
+#
+#index numeric     text  with_missing label
+#0 -10.856306               4.433240     b
+#1   9.973454      foo           NaN     b
+#2   2.829785  foo bar      2.469828     a
+#3 -15.062947               2.852981     b
+#4  -5.786003  foo bar      1.826475     a
+
+# Import Pipeline
+from sklearn.pipeline import Pipeline
+
+# Import other necessary modules
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.multiclass import OneVsRestClassifier
+
+# Split and select numeric data only, no nans 
+X_train, X_test, y_train, y_test = train_test_split(sample_df[['numeric']],
+                                                    pd.get_dummies(sample_df['label']), 
+                                                    random_state=22)
+
+# Instantiate Pipeline object: pl
+pl = Pipeline([
+        ('clf', OneVsRestClassifier(LogisticRegression()))
+    ])
+
+# Fit the pipeline to the training data
+pl.fit(X_train, y_train)
+
+# Compute and print accuracy
+accuracy = pl.score(X_test, y_test)
+print("\nAccuracy on sample data - numeric, no nans: ", accuracy)
+
+# ------------------------Example 2, dealing with missing data ----------------
+# Import the Imputer object
+from sklearn.preprocessing import Imputer 
+
+# Create training and test sets using only numeric data
+X_train, X_test, y_train, y_test = train_test_split(sample_df[['numeric', 'with_missing']],
+                                                    pd.get_dummies(sample_df['label']), 
+                                                    random_state=456)
+
+# Insantiate Pipeline object: pl
+pl = Pipeline([
+        ('imp', Imputer()),
+        ('clf', OneVsRestClassifier(LogisticRegression()))
+    ])
+
+# Fit the pipeline to the training data
+pl.fit(X_train, y_train)
+
+# Compute and print accuracy
+accuracy = pl.score(X_test, y_test)
+print("\nAccuracy on sample data - all numeric, incl nans: ", accuracy)
+
+# =============================================================================
+# Text features
+# and
+# feature unions
+# =============================================================================
+# =============================================================================
+# Preprocessing text features
+# 
+# Here, you'll perform a similar preprocessing pipeline step, only this time you'll 
+# use the text column from the sample data.
+# 
+# To preprocess the text, you'll turn to CountVectorizer() to generate a 
+# bag-of-words representation of the data, as in Chapter 2. Using the default
+#  arguments, add a (step, transform) tuple to the steps list in your pipeline.
+# 
+# =============================================================================
+
+# Import the CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
+
+# Split out only the text data
+X_train, X_test, y_train, y_test = train_test_split(sample_df['text'],
+                                                    pd.get_dummies(sample_df['label']), 
+                                                    random_state=456)
+
+# Instantiate Pipeline object: pl
+pl = Pipeline([
+        ('vec', CountVectorizer()),
+        ('clf', OneVsRestClassifier(LogisticRegression()))
+    ])
+
+# Fit to the training data
+pl.fit(X_train, y_train)
+
+# Compute and print accuracy
+accuracy = pl.score(X_test, y_test)
+print("\nAccuracy on sample data - just text data: ", accuracy)
+
+# =============================================================================
+# Multiple types of processing: FunctionTransformer
+# 
+# The next two exercises will introduce new topics you'll need to make 
+# your pipeline truly excel.
+# 
+# Any step in the pipeline must be an object that implements the fit and 
+# transform methods. The FunctionTransformer creates an object with these 
+# methods out of any Python function that you pass to it. We'll use it to 
+# help select subsets of data in a way that plays nicely with pipelines.
+# 
+# You are working with numeric data that needs imputation, and text data that 
+# needs to be converted into a bag-of-words. You'll create functions that separate
+#  the text from the numeric variables and see how the .fit() and .transform() methods work.
+# =============================================================================
+
+#Preprocessing multiple dtypes
+#● Want to use all available features in one pipeline
+#● Problem
+#● Pipeline steps for numeric and text preprocessing
+#can’t follow each other
+#● e.g., output of CountVectorizer can’t be
+#input to Imputer
+#● Solution
+#● FunctionTransformer() & FeatureUnion()
+
+#FunctionTransformer
+#● Turns a Python function into an object that a scikit-learn
+#pipeline can understand
+#● Need to write two functions for pipeline preprocessing
+#● Take entire DataFrame, return numeric columns
+#● Take entire DataFrame, return text columns
+#● Can then preprocess numeric and text data in
+#separate pipelines
+
+
+# Import FunctionTransformer
+from sklearn.preprocessing import FunctionTransformer
+
+# Obtain the text data: get_text_data
+get_text_data = FunctionTransformer(lambda x: x['text'], validate=False)
+
+# Obtain the numeric data: get_numeric_data
+get_numeric_data = FunctionTransformer(lambda x: x[['numeric', 'with_missing']], validate=False)
+
+# Fit and transform the text data: just_text_data
+just_text_data = get_text_data.fit_transform(sample_df)
+
+# Fit and transform the numeric data: just_numeric_data
+just_numeric_data = get_numeric_data.fit_transform(sample_df)
+
+# Print head to check results
+print('Text Data')
+print(just_text_data.head())
+print('\nNumeric Data')
+print(just_numeric_data.head())
+
+#You can see in the shell that fit and transform are now available to the selectors.
+# Let's put the selectors to work!
+
+# =============================================================================
+# Multiple types of processing: FeatureUnion
+# 
+# Now that you can separate text and numeric data in your pipeline, you're ready 
+# to perform separate steps on each by nesting pipelines and using FeatureUnion().
+# 
+# These tools will allow you to streamline all preprocessing steps for your model, 
+# even when multiple datatypes are involved. Here, for example, you don't want to 
+# impute our text data, and you don't want to create a bag-of-words with our numeric data. 
+# Instead, you want to deal with these separately and then join the results together 
+# using FeatureUnion().
+# 
+# In the end, you'll still have only two high-level steps in your 
+# pipeline: preprocessing and model instantiation. The difference 
+# is that the first preprocessing step actually consists of a pipeline 
+# for numeric data and a pipeline for text data. The results of those 
+# pipelines are joined using FeatureUnion()
+# 
+# 
+# =============================================================================
+
+# Import FeatureUnion
+from sklearn.pipeline import FeatureUnion
+
+# Split using ALL data in sample_df
+X_train, X_test, y_train, y_test = train_test_split(sample_df[['numeric', 'with_missing', 'text']],
+                                                    pd.get_dummies(sample_df['label']), 
+                                                    random_state=22)
+
+# Create a FeatureUnion with nested pipeline: process_and_join_features
+process_and_join_features = FeatureUnion(
+            transformer_list = [
+                ('numeric_features', Pipeline([
+                    ('selector', get_numeric_data),
+                    ('imputer', Imputer())
+                ])),
+                ('text_features', Pipeline([
+                    ('selector', get_text_data),
+                    ('vectorizer', CountVectorizer())
+                ]))
+             ]
+        )
+
+# Instantiate nested pipeline: pl
+pl = Pipeline([
+        ('union', process_and_join_features),
+        ('clf', OneVsRestClassifier(LogisticRegression()))
+    ])
+
+
+# Fit pl to the training data
+pl.fit(X_train, y_train)
+
+# Compute and print accuracy
+accuracy = pl.score(X_test, y_test)
+print("\nAccuracy on sample data - all data: ", accuracy)
+
+# --------------------BACK TO THE COMPETITION DATA-----------------------------
+
+# =============================================================================
+# Using FunctionTransformer on the main dataset
+# 
+# In this exercise you're going to use FunctionTransformer on the primary budget 
+# data, before instantiating a multiple-datatype pipeline in the next exercise.
+# =============================================================================
+
+# Import FunctionTransformer
+from sklearn.preprocessing import FunctionTransformer
+from sklearn.pipeline import FeatureUnion
+
+# Get the dummy encoding of the labels
+dummy_labels = pd.get_dummies(df[LABELS])
+
+# Get the columns that are features in the original df
+NON_LABELS = [c for c in df.columns if c not in LABELS]
+
+# Split into training and test sets
+X_train, X_test, y_train, y_test = multilabel_train_test_split(df[NON_LABELS],
+                                                               dummy_labels,
+                                                               0.2, 
+                                                               seed=123)
+
+# Preprocess the text data: get_text_data
+get_text_data = FunctionTransformer(combine_text_columns, validate = False)
+
+# Preprocess the numeric data: get_numeric_data
+get_numeric_data = FunctionTransformer(lambda x: x[NUMERIC_COLUMNS], validate=False)
+
+
+# Add a model to the pipeline
+
+# Complete the pipeline: pl
+pl = Pipeline([
+        ('union', FeatureUnion(
+            transformer_list = [
+                ('numeric_features', Pipeline([
+                    ('selector', get_numeric_data),
+                    ('imputer', Imputer())
+                ])),
+                ('text_features', Pipeline([
+                    ('selector', get_text_data),
+                    ('vectorizer', CountVectorizer())
+                ]))
+             ]
+        )),
+        ('clf', OneVsRestClassifier(LogisticRegression()))
+    ])
+
+# Fit to the training data
+pl.fit(X_train, y_train)
+
+# Compute and print accuracy
+accuracy = pl.score(X_test, y_test)
+print("\nAccuracy on budget dataset: ", accuracy)
+
+# =============================================================================
+# Try a different class of model
+# =============================================================================
+
+# Import random forest classifer
+from sklearn.ensemble import RandomForestClassifier
+
+# Edit model step in pipeline
+pl = Pipeline([
+        ('union', FeatureUnion(
+            transformer_list = [
+                ('numeric_features', Pipeline([
+                    ('selector', get_numeric_data),
+                    ('imputer', Imputer())
+                ])),
+                ('text_features', Pipeline([
+                    ('selector', get_text_data),
+                    ('vectorizer', CountVectorizer())
+                ]))
+             ]
+        )),
+        ('clf', RandomForestClassifier())
+    ])
+
+# Fit to the training data
+pl.fit(X_train, y_train)
+
+# Compute and print accuracy
+accuracy = pl.score(X_test, y_test)
+print("\nAccuracy on budget dataset: ", accuracy)
+
+# =============================================================================
+# Adjust the model or parameters to improve accuracy
+# =============================================================================
+
+# Try changing the parameter n_estimators of RandomForestClassifier(), whose default value is 10, to 15
+
+# Import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+# Add model step to pipeline: pl
+pl = Pipeline([
+        ('union', FeatureUnion(
+            transformer_list = [
+                ('numeric_features', Pipeline([
+                    ('selector', get_numeric_data),
+                    ('imputer', Imputer())
+                ])),
+                ('text_features', Pipeline([
+                    ('selector', get_text_data),
+                    ('vectorizer', CountVectorizer())
+                ]))
+             ]
+        )),
+        ('clf', RandomForestClassifier(n_estimators = 15))
+    ])
+
+# Fit to the training data
+pl.fit(X_train, y_train)
+
+# Compute and print accuracy
+accuracy = pl.score(X_test, y_test)
+print("\nAccuracy on budget dataset: ", accuracy)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
