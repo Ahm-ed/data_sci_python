@@ -134,9 +134,9 @@ plt.ylabel('Number of unique values')
 # Display the plot
 plt.show()
 
-As Peter explained in the video, log loss provides a steep penalty for 
-predictions that are both wrong and confident, i.e., a high probability is 
-assigned to the incorrect class
+#As Peter explained in the video, log loss provides a steep penalty for 
+#predictions that are both wrong and confident, i.e., a high probability is 
+#assigned to the incorrect class
 
 # =============================================================================
 # Computing log loss with NumPy
@@ -188,7 +188,6 @@ def compute_log_loss(predicted, actual, eps=1e-14):
      loss = -1 * np.mean(actual * np.log(predicted) + (1 - actual) * np.log(1 - predicted))
      
      return loss
-
 
 compute_log_loss(predicted=0.9, actual=0)
 compute_log_loss(predicted=0.5, actual=1)
@@ -762,6 +761,7 @@ print("\nAccuracy on budget dataset: ", accuracy)
 
 # Import RandomForestClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import Imputer 
 
 # Add model step to pipeline: pl
 pl = Pipeline([
@@ -788,26 +788,300 @@ accuracy = pl.score(X_test, y_test)
 print("\nAccuracy on budget dataset: ", accuracy)
 
 
+# =============================================================================
+# Learning from the experts: Text Preprocessing
+# =============================================================================
+
+#Learning from the expert: text preprocessing
+#● NLP tricks for text data
+#● Tokenize on punctuation to avoid hyphens, underscores, etc.
+#● Include unigrams and bi-grams in the model to
+#capture important information involving multiple tokens - e.g., ‘middle school’
+
+#Before you build up to the winning pipeline, it will be useful to look a little 
+#deeper into how the text features will be processed.
+#
+#In this exercise, you will use CountVectorizer on the training data X_train
+# to see the effect of tokenization on punctuation
+
+# Import the CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
+
+# Create the text vector
+text_vector = combine_text_columns(X_train)
+
+# Create the token pattern: TOKENS_ALPHANUMERIC
+TOKENS_ALPHANUMERIC = '[A-Za-z0-9]+(?=\\s+)'
+
+# Instantiate the CountVectorizer: text_features
+text_features = CountVectorizer(token_pattern=TOKENS_ALPHANUMERIC)
+
+# Fit text_features to the text vector
+text_features.fit(text_vector)
+
+# Print the first 10 tokens
+print(text_features.get_feature_names()[:10])
+
+# =============================================================================
+# N-gram range in scikit-learn
+# 
+# In this exercise you'll insert a CountVectorizer instance into your pipeline 
+# for the main dataset, and compute multiple n-gram features to be used in the model.
+# =============================================================================
+
+# Import pipeline
+from sklearn.pipeline import Pipeline
+
+# Import classifiers
+from sklearn.linear_model import LogisticRegression
+from sklearn.multiclass import OneVsRestClassifier
+
+# Import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
+
+# Import other preprocessing modules
+from sklearn.preprocessing import Imputer
+from sklearn.feature_selection import chi2, SelectKBest
+
+# Select 300 best features
+chi_k = 300
+
+# Import functional utilities
+from sklearn.preprocessing import FunctionTransformer, MaxAbsScaler
+from sklearn.pipeline import FeatureUnion
+
+# Perform preprocessing
+get_text_data = FunctionTransformer(combine_text_columns, validate=False)
+get_numeric_data = FunctionTransformer(lambda x: x[NUMERIC_COLUMNS], validate=False)
+
+# Create the token pattern: TOKENS_ALPHANUMERIC
+TOKENS_ALPHANUMERIC = '[A-Za-z0-9]+(?=\\s+)'
+
+# Instantiate pipeline: pl
+pl = Pipeline([
+        ('union', FeatureUnion(
+            transformer_list = [
+                ('numeric_features', Pipeline([
+                    ('selector', get_numeric_data),
+                    ('imputer', Imputer())
+                ])),
+                ('text_features', Pipeline([
+                    ('selector', get_text_data),
+                    ('vectorizer', CountVectorizer(token_pattern=TOKENS_ALPHANUMERIC,
+                                                   ngram_range=(1,2))),
+                    ('dim_red', SelectKBest(chi2, chi_k))
+                ]))
+             ]
+        )),
+        ('scale', MaxAbsScaler()),
+        ('clf', OneVsRestClassifier(LogisticRegression()))
+    ])
 
 
+#You'll notice a couple of new steps provided in the pipeline in this and many 
+#of the remaining exercises. Specifically, the dim_red step following the vectorizer 
+#step , and the scale step preceeding the clf (classification) step.
+#
+#These have been added in order to account for the fact that you're using a 
+#reduced-size sample of the full dataset in this course. To make sure the models 
+#perform as the expert competition winner intended, we have to apply a dimensionality 
+#reduction technique, which is what the dim_red step does, and we have to scale 
+#the features to lie between -1 and 1, which is what the scale step does.
+#
+#The dim_red step uses a scikit-learn function called SelectKBest(), applying 
+#something called the chi-squared test to select the K "best" features. 
+#The scale step uses a scikit-learn function called MaxAbsScaler() in order to 
+#squash the relevant features into the interval -1 to 1.
 
+# =============================================================================
+# Learning from the expert: a stats trick
+# =============================================================================
 
+#Learning from the expert: interaction terms
+#● Statistical tool that the winner used: interaction terms
+#● Example
+#● English teacher for 2nd grade
+#● 2nd grade - budget for English teacher
+#● Interaction terms mathematically describe when
+#tokens appear together
 
+#Adding interaction features with scikit-learn
+   
+x1 = np.array([0,1])
+x2 = np.array([1,1])
 
+x = pd.DataFrame([x1, x2], columns = ['x1', 'x2'], index = ['a', 'b'])
 
+from sklearn.preprocessing import PolynomialFeatures  
+interaction = PolynomialFeatures(degree=2,
+                                 interaction_only=True,
+                                 include_bias=False)    
+interaction.fit_transform(x)     
 
+# Bias term allows model to have non-zero y value when x value is zero  
 
+# Sparse interaction features
 
+#The number of interaction terms grows exponentially
+#● Our vectorizer saves memory by using a sparse matrix
+#● PolynomialFeatures does not support sparse matrices
+#● We have provided SparseInteractions to work for this problem:
 
+SparseInteractions(degree=2).fit_transform(x).toarray() 
 
+#Implement interaction modeling in scikit-learn
+#
+#It's time to add interaction features to your model. The PolynomialFeatures 
+#object in scikit-learn does just that, but here you're going to use a custom 
+#interaction object, SparseInteractions. Interaction terms are a statistical 
+#tool that lets your model express what happens if two features appear together 
+#in the same row.
+#
+#SparseInteractions does the same thing as PolynomialFeatures, but it uses sparse
+# matrices to do so. You can get the code for SparseInteractions at this GitHub Gist.
+#
+#PolynomialFeatures and SparseInteractions both take the argument degree, which 
+#tells them what polynomial degree of interactions to compute.
+#
+#You're going to consider interaction terms of degree=2 in your pipeline. 
+#You will insert these steps after the preprocessing steps you've built out so far, 
+#but before the classifier steps.
 
+# Instantiate pipeline: pl
 
+from sklearn.feature_selection import SelectKBest
 
+pl = Pipeline([
+        ('union', FeatureUnion(
+            transformer_list = [
+                ('numeric_features', Pipeline([
+                    ('selector', get_numeric_data),
+                    ('imputer', Imputer())
+                ])),
+                ('text_features', Pipeline([
+                    ('selector', get_text_data),
+                    ('vectorizer', CountVectorizer(token_pattern=TOKENS_ALPHANUMERIC,
+                                                   ngram_range=(1, 2))),  
+                    ('dim_red', SelectKBest(chi2, chi_k))
+                ]))
+             ]
+        )),
+        ('int', SparseInteractions(degree = 2)),
+        ('scale', MaxAbsScaler()),
+        ('clf', OneVsRestClassifier(LogisticRegression()))
+    ])
 
+# =============================================================================
+# Learning from the expert: a computational trick and the winning model
+# =============================================================================
 
+# =============================================================================
+# Learning from the expert: hashing trick
+# =============================================================================
 
+#● Adding new features may cause enormous increase in array size
+#● Hashing is a way of increasing memory efficiency
+#● Hash function limits possible outputs, fixing array size
+#
+#When to use the hashing trick
+#● Want to make array of features as small as possible
+#● Dimensionality reduction
+#● Particularly useful on large datasets e.g., lots of text data!
 
+#Some problems are memory-bound and not easily parallelizable, and hashing 
+#enforces a fixed length computation instead of using a mutable datatype (like a dictionary).
+#
+#Enforcing a fixed length can speed up calculations drastically, especially on large datasets!
 
+# =============================================================================
+# Implementing the hashing trick in scikit-learn
+# =============================================================================
 
+# ---------------example-------------------------------------------------------
+from sklearn.feature_extraction.text import HashingVectorizer
 
+vec = HashingVectorizer(norm = None,
+                        alternate_sign = False,
+                        token_pattern=TOKENS_ALPHANUMERIC,
+                        ngram_range=(1, 2))
 
+# ---------------example end --------------------------------------------------
+
+# Import HashingVectorizer
+from sklearn.feature_extraction.text import HashingVectorizer
+
+# Get text data: text_data
+text_data = combine_text_columns(X_train)
+
+# Create the token pattern: TOKENS_ALPHANUMERIC
+TOKENS_ALPHANUMERIC = '[A-Za-z0-9]+(?=\\s+)' 
+
+# Instantiate the HashingVectorizer: hashing_vec
+hashing_vec = HashingVectorizer(token_pattern=TOKENS_ALPHANUMERIC)
+
+# Fit and transform the Hashing Vectorizer
+hashed_text = hashing_vec.fit_transform(text_data)
+
+# Create DataFrame and print the head
+hashed_df = pd.DataFrame(hashed_text.data)
+print(hashed_df.head())
+
+#As you can see, some text is hashed to the same value, but this 
+#doesn't neccessarily hurt performance.
+
+# =============================================================================
+# Build the winning model
+# 
+# You have arrived! This is where all of your hard work pays off. 
+# It's time to build the model that won DrivenData's competition.
+# =============================================================================
+
+# Import the hashing vectorizer
+from sklearn.feature_extraction.text import HashingVectorizer
+
+# Instantiate the winning model pipeline: pl
+pl = Pipeline([
+        ('union', FeatureUnion(
+            transformer_list = [
+                ('numeric_features', Pipeline([
+                    ('selector', get_numeric_data),
+                    ('imputer', Imputer())
+                ])),
+                ('text_features', Pipeline([
+                    ('selector', get_text_data),
+                    ('vectorizer', HashingVectorizer(token_pattern=TOKENS_ALPHANUMERIC,
+                                                     alternate_sign=False, 
+                                                     norm=None, 
+                                                     binary=False,
+                                                     ngram_range= (1,2))),
+                    ('dim_red', SelectKBest(chi2, chi_k))
+                ]))
+             ]
+        )),
+        ('int', SparseInteractions(degree=2)),
+        ('scale', MaxAbsScaler()),
+        ('clf', OneVsRestClassifier(LogisticRegression()))
+    ])
+
+#The parameters non_negative=True, norm=None, and binary=False make the 
+#HashingVectorizer perform similarly to the default settings on the CountVectorizer 
+#so you can just replace one with the other.
+                
+                
+# Fit to the training data
+pl.fit(X_train, y_train)
+
+# Compute and print accuracy
+accuracy = pl.score(X_test, y_test)
+print("\nAccuracy on budget dataset: ", accuracy)
+
+# =============================================================================
+# Can you do be!er?
+# ● You’ve seen the flexibility of the pipeline steps
+# ● Quickly test ways of improving your submission
+# ● NLP: Stemming, stop-word removal
+# ● Model: RandomForest, k-NN, Naïve Bayes
+# ● Numeric Preprocessing: Imputation strategies
+# ● Optimization: Grid search over pipeline objects
+# ● Experiment with new scikit-learn techniques 
+# =============================================================================
