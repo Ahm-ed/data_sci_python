@@ -1249,38 +1249,345 @@ plt.show()
 # Visualizing the PCA transformation
 # =============================================================================
 
+#Dimension reduction
+#● More efficient storage and computation
+#● Remove less-informative "noise" features
+#● ... which cause problems for prediction tasks, e.g.
+#classification, regression
+#
+#Principal Component Analysis
+#● PCA = "Principal Component Analysis"
+#● Fundamental dimension reduction technique
+#● First step "decorrelation" (considered here)
+#● Second step reduces dimension (considered later)
+#
+#PCA aligns data with axes
+#● Rotates data samples to be aligned with axes
+#● Shi"s data samples so they have mean 0
+#● No information is lost
+#
+#PCA follows the fit/transform pa!ern
+#● PCA a scikit-learn component like KMeans or
+#StandardScaler
+#● fit() learns the transformation from given data
+#● transform() applies the learned transformation
+#● transform() can also be applied to new data
+
+# =============================================================================
+# #Correlated data in nature
+# =============================================================================
+#
+#You are given an array grains giving the width and length of samples of grain. 
+#You suspect that width and length will be correlated. To confirm this, make a 
+#scatter plot of width vs length and measure their Pearson correlation
+
+names = ['area','perimeter', 'compactness', 'length_of_kernel', 'width_of_kernel', 
+         'asymmetry_coef', 'length_of_kernel_groove']
+
+grains = pd.read_csv('data/seeds_dataset.txt', sep = '\t', error_bad_lines=False, names = names)
+grains_val = grains.values
+
+# Perform the necessary imports
+import matplotlib.pyplot as plt
+from scipy.stats import pearsonr
+
+# Assign the 0th column of grains: width
+width = grains_val[:,4]
+
+# Assign the 1st column of grains: length
+length = grains_val[:,3]
+
+# Scatter plot width vs length
+plt.scatter(width, length)
+plt.axis('equal')
+plt.show()
+
+# Calculate the Pearson correlation
+correlation, pvalue = pearsonr(width, length)
+
+# Display the correlation
+print(correlation)
+
+# =============================================================================
+# Decorrelating the grain measurements with PCA
+# =============================================================================
+
+# width and length measurements of the grain are correlated. Now, you'll use PCA 
+# to decorrelate these measurements, then plot the decorrelated points and measure 
+# their Pearson correlation.
+
+# Import PCA
+from sklearn.decomposition import PCA
+
+# Create PCA instance: model
+model = PCA()
+
+# Apply the fit_transform method of model to grains: pca_features
+pca_features = model.fit_transform(grains_val)
+
+# Assign 0th column of pca_features: xs
+xs = pca_features[:,4]
+
+# Assign 1st column of pca_features: ys
+ys = pca_features[:,3]
+
+# Scatter plot xs vs ys
+plt.scatter(xs, ys)
+plt.axis('equal')
+plt.show()
+
+# Calculate the Pearson correlation of xs and ys
+correlation, pvalue = pearsonr(xs, ys)
+
+# Display the correlation
+print(correlation)
+
+# =============================================================================
+# Intrinsic dimension
+# 
+# Intrinsic dimension
+# ● Intrinsic dimension = number of features needed to
+# approximate the dataset
+# ● Essential idea behind dimension reduction
+# ● What is the most compact representation of the samples?
+# ● Can be detected with PCA
+# 
+# Intrinsic dimension = number of PCA features with significant variance
+# 
+# =============================================================================
+
+#The first principal component
+#
+#The first principal component of the data is the direction in which the data 
+#varies the most. In this exercise, your job is to use PCA to find the first 
+#principal component of the length and width measurements of the grain samples, 
+#and represent it as an arrow on the scatter plot.
+
+names = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'class']
+
+iris = pd.read_csv('data/iris.data', names = names)
+iris_val = iris.drop('class', axis = 1).values
+
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+
+pca = PCA()
+pca.fit(iris_val)
+
+features = range(pca.n_components_)
+
+#Plotting the variances of PCA features
+
+plt.bar(features, pca.explained_variance_) 
+plt.xticks(features) 
+plt.ylabel('variance') 
+plt.xlabel('PCA feature') 
+plt.show()
+
+# --------------------USING JUST TWO FEATURES--------------------------------
+# Make a scatter plot of the untransformed points
+iris_2 = iris_val[:,(0,1)]
+plt.scatter(iris_val[:,0], iris_val[:,1])
+
+# Create a PCA instance: model
+model = PCA()
+
+# Fit model to points
+model.fit(iris_2)
+
+# Get the mean of the grain samples: mean
+mean = model.mean_
+
+# Get the first principal component: first_pc
+first_pc = model.components_[0,:]
+
+# Plot first_pc as an arrow, starting at mean
+plt.arrow(mean[0], mean[1], first_pc[0], first_pc[1], color='red', width=0.01)
+
+# Keep axes on same scale
+plt.axis('equal')
+plt.show()
+
+# =============================================================================
+# Variance of the PCA features
+# =============================================================================
+
+# Perform the necessary imports
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+import matplotlib.pyplot as plt
+
+# Create scaler: scaler
+scaler = StandardScaler()
+
+# Create a PCA instance: pca
+pca = PCA()
+
+# Create pipeline: pipeline
+pipeline = make_pipeline(scaler, pca)
+
+# Fit the pipeline to 'samples'
+pipeline.fit(iris_val)
+
+# Plot the explained variances
+features = range(pca.n_components_)
+plt.bar(features, pca.explained_variance_)
+plt.xlabel('PCA feature')
+plt.ylabel('variance')
+plt.xticks(features)
+plt.show()
+
+# =============================================================================
+# Dimension reduction with PCA
+# =============================================================================
+
+#● Represents same data, using less features
+#● Important part of machine-learning pipelines
+#● Can be performed using PCA
+#● PCA features are in decreasing order of variance
+#● Assumes the low variance features are "noise"
+#● … and high variance features are informative
+#
+#● Specify how many features to keep
+#● E.g. PCA(n_components=2)
+#● Keeps the first 2 PCA features
+#● Intrinsic dimension is a good choice
+#
+#Iris dataset in 2 dimensions
+#● PCA has reduced the dimension to 2
+#● Retained the 2 PCA features with highest variance
+#● Important information preserved: species remain distinct
+
+species = list(iris.iloc[:, -1])
+
+from sklearn.decomposition import PCA
+pca = PCA(n_components=2)
+pca.fit(iris_val)
+
+transformed = pca.transform(iris_val)
+print(transformed.shape) 
+
+import matplotlib.pyplot as plt
+xs = transformed[:,0]
+ys = transformed[:,1]
+plt.scatter(xs, ys, c= species)
+plt.show()
+
+# =============================================================================
+# #Word frequency arrays
+# =============================================================================
+
+#● Rows represent documents, columns represent words
+#● Entries measure presence of each word in each document
+#● ... measure using "tf-idf" (more later)
+#
+#Sparse arrays and csr_matrix
+#● Array is "sparse": most entries are zero
+#● Can use scipy.sparse.csr_matrix instead of NumPy array
+#● csr_matrix remembers only the non-zero entries (saves space!)
+
+#● scikit-learn PCA doesn't support csr_matrix
+#● Use scikit-learn TruncatedSVD instead
+#● Performs same transformation
+
+# TruncatedSVD and csr_matrix - TruncatedSVD is the same as PCA but uses sparse arrays
+
+from sklearn.decomposition import TruncatedSVD
+
+model = TruncatedSVD(n_components=3)
+model.fit(documents) # documents is csr_matrix
+
+transformed = model.transform(documents)
+
+# =============================================================================
+# Dimension reduction of the fish measurements
+# =============================================================================
+
+fish = pd.read_csv('data/fish.csv', header=None)
+fish_val = fish.drop(0, axis = 1).values
+
+# Import PCA
+from sklearn.decomposition import PCA
+
+# Create scaler: scaler
+scaler = StandardScaler()
+
+# Create a PCA model with 2 components: pca
+pca = PCA(n_components = 2)
+
+# Create pipeline: pipeline
+pipeline = make_pipeline(scaler, pca)
+
+# Fit the PCA instance to the scaled samples
+pipeline.fit(fish_val)
+
+# Print the shape of pca_features
+print(pca.transform(fish_val).shape)
+
+# successfully reduced the dimensionality from 6 to 2.
 
 
+# =============================================================================
+# A tf-idf word-frequency array
+# 
+# In this exercise, you'll create a tf-idf word frequency array for a toy 
+# collection of documents. For this, use the TfidfVectorizer from sklearn. 
+# It transforms a list of documents into a word frequency array, which it 
+# outputs as a csr_matrix. It has fit() and transform() methods like other 
+# sklearn objects.
+# =============================================================================
+
+documents = ['cats say meow', 'dogs say woof', 'dogs chase cats']
+
+# Import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Create a TfidfVectorizer: tfidf
+tfidf = TfidfVectorizer()
+
+# Apply fit_transform to document: csr_mat
+csr_mat = tfidf.fit_transform(documents)
+
+# Print result of toarray() method
+print(csr_mat.toarray())
+
+# Get the words: words
+words = tfidf.get_feature_names()
+
+# Print words
+print(words)
+
+# =============================================================================
+# Clustering Wikipedia part I
+# 
+# You saw in the video that TruncatedSVD is able to perform PCA on sparse arrays 
+# in csr_matrix format, such as word-frequency arrays. Combine your knowledge of 
+# TruncatedSVD and k-means to cluster some popular pages from Wikipedia. In this 
+# exercise, build the pipeline. In the next exercise, you'll apply it to the 
+# word-frequency array of some Wikipedia articles.
+# 
+# Create a Pipeline object consisting of a TruncatedSVD followed by KMeans. 
+# (This time, we've precomputed the word-frequency matrix for you, so there's no 
+#  need for a TfidfVectorizer).
+# =============================================================================
 
 
+# Perform the necessary imports
+from sklearn.decomposition import TruncatedSVD
+from sklearn.cluster import KMeans
+from sklearn.pipeline import make_pipeline
 
+# Create a TruncatedSVD instance: svd
+svd = TruncatedSVD(n_components = 50)
 
+# Create a KMeans instance: kmeans
+kmeans = KMeans(n_clusters = 6)
 
+# Create a pipeline: pipeline
+pipeline = make_pipeline(svd, kmeans)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+wiki = pd.read_csv('data/wikipedia_utf8_filtered_20pageviews.csv')
 
 
 
