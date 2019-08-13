@@ -1572,28 +1572,381 @@ print(words)
 #  need for a TfidfVectorizer).
 # =============================================================================
 
+import pandas as pd
+wiki = pd.read_csv('data/wikipedia_utf8_filtered_20pageviews.csv', header = None)
+
+# Let's take 1% of the data
+wiki_sample = wiki.sample(frac = 0.01)
 
 # Perform the necessary imports
 from sklearn.decomposition import TruncatedSVD
 from sklearn.cluster import KMeans
 from sklearn.pipeline import make_pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
 
-# Create a TruncatedSVD instance: svd
+# Create a TfidfVectorizer: tfidf
+tfidf = TfidfVectorizer()
+
+# Apply fit_transform to document: csr_mat
+csr_mat = tfidf.fit_transform(wiki_sample[1])
+
+# Get the words: words if needed
+words = tfidf.get_feature_names()
+
+# View the matrix
+print(csr_mat.toarray())
+
+# PCA
+# Create a TruncatedSVD instance: svd. This is the same as PCA but due to the fact 
+# that we have sparse matrix we have to use truncatedsvd as sci-kit learn PCA
+# doesn't take sparse matrix
 svd = TruncatedSVD(n_components = 50)
 
-# Create a KMeans instance: kmeans
+# Create a KMeans instance: kmeans. Let's use the 50 princp component in KMeans clusttering
 kmeans = KMeans(n_clusters = 6)
 
 # Create a pipeline: pipeline
 pipeline = make_pipeline(svd, kmeans)
 
-wiki = pd.read_csv('data/wikipedia_utf8_filtered_20pageviews.csv')
+# Fit the pipeline to articles
+pipeline.fit(csr_mat)
 
 
+# Calculate the cluster labels: labels
+labels = pipeline.predict(csr_mat)
+
+# Create a DataFrame aligning labels and titles: df
+df = pd.DataFrame({'label': labels, 'article': wiki_sample[0]})
+
+# Display df sorted by cluster label
+print(df.sort_values(by = 'label'))
+
+# =============================================================================
+# Non-negative matrix factorization (NMF)
+# =============================================================================
+
+#Non-negative matrix factorization
+#
+#● NMF = "non-negative matrix factorization"
+#● Dimension reduction technique
+#● NMF models are interpretable (unlike PCA)
+#● Easy to interpret means easy to explain!
+#● However, all sample features must be non-negative (>= 0)
+
+#Interpretable parts
+#● NMF expresses documents as combinations of topics (or
+#"themes")
+#● NMF expresses images as combinations of patterns
+#
+#Using scikit-learn NMF
+#● Follows fit() / transform() pa!ern
+#● Must specify number of components e.g. NMF(n_components=2)
+#● Works with NumPy arrays and with csr_matrix
+
+# =============================================================================
+# Example word-frequency array
+# 
+# ● Word frequency array, 4 words, many documents
+# ● Measure presence of words in each document using "tf-idf"
+# ● "tf" = frequency of word in document
+# ● "idf" reduces influence of frequent words
+# =============================================================================
+
+# =============================================================================
+# NMF has components
+# 
+# ● ... just like PCA has principal components
+# ● Dimension of components = dimension of samples
+# ● Entries are non-negative
+# =============================================================================
+
+# =============================================================================
+# NMF features
+# 
+# ● NMF feature values are non-negative
+# ● Can be used to reconstruct the samples
+# ● ... combine feature values with components
+# =============================================================================
+
+# =============================================================================
+# Sample reconstruction
+# 
+# ● Multiply components by feature values, and add up
+# ● Can also be expressed as a product of matrices
+# ● This is the "Matrix Factorization" in "NMF
+# =============================================================================
+
+# =============================================================================
+# NMF fits to non-negative data, only
+# 
+# ● Word frequencies in each document
+# ● Images encoded as arrays
+# ● Audio spectrograms
+# ● Purchase histories on e-commerce sites
+# ● … and many more!
+# =============================================================================
+
+# ------------------------Toy example -----------------------------------------
+
+from sklearn.decomposition import NMF
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+samples = ['cats say meow', 'dogs say woof', 'dogs chase cats']
+
+# Create a TfidfVectorizer: tfidf
+tfidf = TfidfVectorizer()
+
+# Apply fit_transform to document: csr_mat
+csr_mat = tfidf.fit_transform(samples)
+
+# Print result of toarray() method
+print(csr_mat.toarray())
+
+# Get the words: words
+words = tfidf.get_feature_names()
+
+# Print words
+print(words)
+
+# MOdel
+model = NMF(n_components=2)
+model.fit(csr_mat)
+nmf_features = model.transform(csr_mat)
+
+# ----------------------------------------------------------------------------
+
+# Import NMF
+from sklearn.decomposition import NMF
+
+# Create a TfidfVectorizer: tfidf
+tfidf = TfidfVectorizer()
+
+# Apply fit_transform to document: csr_mat
+csr_mat = tfidf.fit_transform(wiki_sample[1])
 
 
+# Create an NMF instance: model
+model = NMF(n_components = 6 )
+
+# Fit the model to articles
+model.fit(csr_mat)
+
+# Transform the articles: nmf_features
+nmf_features = model.transform(csr_mat)
+
+# Print the NMF features
+print(nmf_features)
+
+# Create a pandas DataFrame: df
+df = pd.DataFrame(nmf_features, index= wiki_sample[0])
+
+# Print the row for 'wikipedia-37277'
+print(df.loc['wikipedia-37277'])
+
+# =============================================================================
+# Multiplying the NMF feature values  by the components of an NMF model 
+# will reconstruct the sample
+# =============================================================================
+
+# Import pandas
+import pandas as pd
+
+# Create a DataFrame: components_df
+components_df = pd.DataFrame(model.components_, columns=words)
+
+# Print the shape of the DataFrame
+print(components_df.shape)
+
+# Select row 3: component
+component = components_df.iloc[3]
+
+# Print result of nlargest
+print(component.nlargest())
+# This gives the five words with the highest values for that component.
+
+# =============================================================================
+# Explore the LED digits dataset
+# =============================================================================
+
+led = pd.read_csv('data/leddigits.csv', header = None).values
+
+#There are 100 images as a 2D array samples, where each row represents a 
+#single 13x8 image. The images in your dataset are pictures of a LED digital display.
+
+# Import pyplot
+from matplotlib import pyplot as plt
+
+# Select the 0th row: digit
+digit = led[0,:]
+
+# Print digit
+print(digit)
+
+# Reshape digit to a 13x8 array: bitmap
+bitmap = digit.reshape((13, 8))
+
+# Print bitmap
+print(bitmap)
+
+# Use plt.imshow to display bitmap
+plt.imshow(bitmap, cmap='gray', interpolation='nearest')
+plt.colorbar()
+plt.show()
+
+# =============================================================================
+# NMF learns the parts of images
+# =============================================================================
+
+# Import NMF
+from sklearn.decomposition import NMF
+
+# Create an NMF model: model
+model = NMF(n_components=7)
+
+# Apply fit_transform to samples: features
+features = model.fit_transform(led)
+
+def show_as_image(sample):
+    bitmap = sample.reshape((13, 8))
+    plt.figure()
+    plt.imshow(bitmap, cmap='gray', interpolation='nearest')
+    plt.colorbar()
+    plt.show()
+    
+    
+# Call show_as_image on each component
+for component in model.components_:
+    show_as_image(component)
+
+# Select the 0th row of features: digit_features
+digit_features = features[0,:]
+
+# Print digit_features
+print(digit_features)
+
+# =============================================================================
+# PCA doesn't learn parts
+# 
+# Unlike NMF, PCA doesn't learn the parts of things. Its components do not 
+# correspond to topics (in the case of documents) or to parts of images, 
+# when trained on images. Verify this for yourself by inspecting the components 
+# of a PCA model fit to the dataset of LED digit images from the previous 
+# exercise.
+# =============================================================================
+# Import PCA
+from sklearn.decomposition import PCA
+
+# Create a PCA instance: model
+model = PCA(n_components = 7)
+
+# Apply fit_transform to samples: features
+features = model.fit_transform(led)
+
+# Call show_as_image on each component
+for component in model.components_:
+    show_as_image(component)
+    
+    
+# Notice that the components of PCA do not represent meaningful parts of images of LED digits    
+    
+
+# =============================================================================
+# Building recommender systems using NMF
+# =============================================================================
 
 
+#Finding similar articles
+#● Engineer at a large online newspaper
+#● Task: recommend articles similar to article being read by
+#customer
+#● Similar articles should have similar topics
+#
+#Strategy
+#
+#● Apply NMF to the word-frequency array
+#● NMF feature values describe the topics
+#● ... so similar documents have similar NMF feature values
+#● Compare NMF feature values?
+
+# Apply NMF to the word-frequency array
+
+#● articles is a word frequency array
+
+from sklearn.decomposition import NMF
+nmf = NMF(n_components=6)
+nmf_features = nmf.fit_transform(articles)
+
+# =============================================================================
+# Versions of articles
+# 
+# Different versions of the same document have same topic proportions
+# ● ... exact feature values may be different!
+# ● E.g. because one version uses many meaningless words
+# ● But all versions lie on the same line through the origin
+# =============================================================================
+
+# =============================================================================
+# Cosine similarity
+# 
+# ● Uses the angle between the lines
+# ● Higher values means more similar
+# ● Maximum value is 1, when angle is 0
+# =============================================================================
+
+#Calculating the cosine similarities
+
+from sklearn.preprocessing import normalize
+norm_features = normalize(nmf_features)
+current_article = norm_features[23,:] # if has index 23
+similarities = norm_features.dot(current_article)
+print(similarities) 
+
+#DataFrames and labels
+#● Label similarities with the article titles, using a DataFrame
+#● Titles given as a list: titles
+
+import pandas as pd
+
+norm_features = normalize(nmf_features)
+df = pd.DataFrame(norm_features, index= titles)
+current_article = df.loc['Dog bites man']
+similarities = df.dot(current_article)
+print(similarities.nlargest()) 
+
+# ----------------------------USING WIKIPEDIA DATA-----------------------------
+
+wiki = pd.read_csv('data/wikipedia_utf8_filtered_20pageviews.csv', header = None)
+
+# Let's take 1% of the data
+wiki_sample = wiki.sample(frac = 0.01)
+
+# Create a TfidfVectorizer: tfidf
+tfidf = TfidfVectorizer()
+
+# Apply fit_transform to document: csr_mat
+csr_mat = tfidf.fit_transform(wiki_sample[1])
+
+from sklearn.decomposition import NMF
+nmf = NMF(n_components=10)
+nmf_features = nmf.fit_transform(csr_mat)
+
+# Perform the necessary imports
+from sklearn.preprocessing import normalize
+
+# Normalize the NMF features: norm_features
+norm_features = normalize(nmf_features)
+
+# Create a DataFrame: df
+df = pd.DataFrame(norm_features, index= wiki_sample[0])
+
+# Select the row corresponding to 'Cristiano Ronaldo': article
+article = df.loc['wikipedia-37277']
+
+# Compute the dot products: similarities
+similarities = df.dot(article)
+
+# Display those with the largest cosine similarity
+print(similarities.nlargest())
 
 
 
