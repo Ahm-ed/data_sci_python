@@ -368,3 +368,204 @@ mse_1 = mean_squared_error(target_actuals, model_output_1)
 print("Mean squared error with weights_0: %f" %mse_0)
 print("Mean squared error with weights_1: %f" %mse_1)
 
+# =============================================================================
+# Gradient Descent
+# =============================================================================
+
+#Calculating slopes
+#
+#You're now going to practice calculating slopes. When plotting the mean-squared 
+#error loss function against predictions, the slope is 2 * x * (y-xb), or 2 * input_data * error. 
+#
+#Note that x and b may have multiple numbers (x is a vector for each data point, and b is a vector). 
+#In this case, the output will also be a vector, which is exactly what you want.
+
+input_data = np.array([1, 2, 3])
+target= 0
+
+weights = np.array([0, 2, 1])
+
+# Calculate the predictions: preds
+preds = (weights * input_data).sum()
+
+# Calculate the error: error
+error = target - preds
+
+# Calculate the slope: slope
+slope = 2 * input_data * error
+
+# Print the slope
+print(slope)
+
+# Improving model weights
+
+#You've just calculated the slopes you need. Now it's time to use those slopes 
+#to improve your model. If you add the slopes to your weights, you will move in 
+#the right direction. However, it's possible to move too far in that direction. 
+#So you will want to take a small step in that direction first, using a lower 
+#learning rate, and verify that the model is improving
+
+# Set the learning rate: learning_rate
+learning_rate = 0.01
+
+# Calculate the predictions: preds
+preds = (weights * input_data).sum()
+
+# Calculate the error: error
+error = preds - target
+
+# Calculate the slope: slope
+slope = 2 * input_data * error
+
+# Update the weights: weights_updated
+weights_updated = weights - (slope * learning_rate)
+
+# Get updated predictions: preds_updated
+preds_updated = (weights_updated * input_data).sum()
+
+# Calculate updated error: error_updated
+error_updated = preds_updated - target
+
+# Print the original error
+print(error)
+
+# Print the updated error
+print(error_updated)
+
+# =============================================================================
+# Making multiple updates to weights
+# =============================================================================
+
+import matplotlib.pyplot as plt
+
+def get_error(input_data, target, weights):
+    preds = (weights * input_data).sum()
+    
+    error = preds - target
+    return(error)
+
+def get_slope(input_data, target, weights):
+    error = get_error(input_data, target, weights)
+    slope = 2 * input_data * error
+    
+    return(slope)
+    
+input_data = np.array([1, 2, 3])
+
+def get_mse(input_data, target, weights):
+    errors = get_error(input_data, target, weights)
+    mse = np.mean(errors**2)
+    
+    return(mse)
+    
+input_data = np.array([1, 2, 3])
+target= 0
+weights = np.array([0, 2, 1])
+
+n_updates = 20
+mse_hist = []
+
+s = []
+w = []
+# Iterate over the number of updates
+for i in range(n_updates):
+    # Calculate the slope: slope
+    slope = get_slope(input_data, target, weights)
+    
+    # Update the weights: weights
+    weights = weights - 0.01 * slope
+    
+    # Calculate mse with new weights: mse
+    mse = get_mse(input_data, target, weights)
+    
+    # Append the mse to mse_hist
+    mse_hist.append(mse)
+    
+    s.append(slope)
+    
+    w.append(weights)
+
+# Plot the mse history
+plt.plot(mse_hist)
+plt.xlabel('Iterations')
+plt.ylabel('Mean Squared Error')
+plt.show()
+
+#As you can see, the mean squared error decreases as the number of iterations go up.
+
+# =============================================================================
+# Creating a keras model
+# =============================================================================
+
+import numpy as np
+from keras.layers import Dense
+from keras.models import Sequential
+
+predictors = np.loadtxt('predictors_data.csv', delimiter=',')
+
+#We always need to specify how many columns are in the input when building 
+#a keras model because that's the number of nodes in the input layer. 
+
+n_cols = predictors.shape[1]
+
+#Sequential models require that each layer has weights or connections only to
+#the layer coming directly after it in the network diagram. There other exotic 
+#models with complex patterns of connection. 
+
+model = Sequential()
+
+#We start adding layers using the add method of the model. We add Dense layers.
+#It's called dense because all the nodes in the previous layer connect to all 
+#the nodes in the current layer. We then specify the number of nodes as the 
+#first positional argument and the activation function we want to use. 
+
+model.add(Dense(100, activation='relu', input_shape = (n_cols,)))
+model.add(Dense(100, activation='relu'))
+
+#In the first layer, we need to specify input shapes which is columns (n_cols)
+#followed by comma only meaning any number of rows/datapoint. 
+
+#The last layer has 1 node. This is the output layer. 
+model.add(Dense(1))
+
+# -----------------------------------------------------------------------------
+
+
+# Import necessary modules
+import pandas as pd
+import numpy as np
+import keras
+from keras.layers import Dense
+from keras.models import Sequential
+
+auto = pd.read_csv('data/auto-mpg.csv', na_values = '?').dropna()
+X = auto.drop(['car name', 'mpg'], axis = 1).values
+y = auto['mpg']
+
+# Save the number of columns in predictors: n_cols
+n_cols = X.shape[1]
+
+# Set up the model: model
+model = Sequential()
+
+# Add the first layer
+model.add(Dense(50, activation='relu', input_shape=(n_cols,)))
+
+# Add the second layer
+model.add(Dense(32, activation = 'relu'))
+
+# Add the output layer
+model.add(Dense(1))
+
+
+
+
+
+
+
+
+
+
+
+
+
