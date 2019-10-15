@@ -502,37 +502,457 @@ my_data_shell = DataShell(integer_list)
 my_data_shell.show()
 my_data_shell.avg()
 
+# =============================================================================
+# Working with a DataSet to
+# Create DataFrames
+# =============================================================================
+
+class DataShell:
+    def __init__(self, filename):
+        self.filename = filename
+        
+    def create_datashell(self):
+        self.array = np.genfromtxt(self.filename, delimiter=',', dtype=None)
+        return self.array
+
+    def show_shell(self):
+        print(self.array)
+
+# creating an instance of a DataShell
+car_data = DataShell('data/auto-mpg.csv')
+
+# print the object
+print(car_data)
+
+x = car_data.create_datashell()
+
+car_data.show_shell()
+
+# =============================================================================
+# Return Statement 
+# =============================================================================
+
+# Create class: DataShell
+class DataShell:
+  
+	# Initialize class with self and dataList as arguments
+    def __init__(self, dataList):
+      	# Set data as instance variable, and assign it the value of dataList
+        self.data = dataList
+        
+	# Define method that returns data: show
+    def show(self):
+        return self.data
+        
+    # Define method that prints average of data: avg 
+    def avg(self):
+        # Declare avg and assign it the average of data
+        avg = sum(self.data)/float(len(self.data))
+        # Return avg
+        return avg
+        
+# Instantiate DataShell taking integer_list as argument: my_data_shell
+my_data_shell = DataShell(integer_list)
+
+# Print output of your object's show method
+print(my_data_shell.show())
+
+# Print output of your object's avg method
+print(my_data_shell.avg())
+
+# =============================================================================
+# A More Powerful DataShell
+# =============================================================================
+
+# Load numpy as np and pandas as pd
+import numpy as np
+import pandas as pd
+
+# Create class: DataShell
+class DataShell:
+  
+    # Initialize class with self and inputFile
+    def __init__(self, inputFile):
+        self.file = inputFile
+        
+    # Define generate_csv method, with self argument
+    def generate_csv(self):
+        self.data_as_csv = pd.read_csv(self.file)
+        return self.data_as_csv
+
+# Instantiate DataShell with us_life_expectancy as input argument
+data_shell = DataShell('data/auto-mpg.csv')
+
+# Call data_shell's generate_csv method, assign it to df
+df = data_shell.generate_csv()
+
+# Print df
+print(df)
+
+# =============================================================================
+# Renaming Columns and the Five-Figure Summary
+# =============================================================================
+
+from scipy import stats
+
+class DataShell:
+    def __init__(self, filename):
+        self.filename = filename
+        
+    def create_datashell(self):
+        self.array = np.genfromtxt(self.filename, delimiter=',', dtype=None)
+        return self.array
+
+    def rename_column(self, old_colname, new_colname):
+        for index, value in enumerate(self.array[0]):
+            if value == old_colname.encode('UTF-8'):
+                self.array[0][index] = new_colname
+        return self.array
+    
+    def five_figure_summary(self):
+        statistics = stats.describe(self.array[1:,col_pos].astype(np.float))
+        return f"Five-figure stats of column {col_position}: {statistics}"
+
+myDatashell = DataShell('data/auto-mpg.csv')
+
+myDatashell.create_datashell()
+
+myDatashell.rename_column('cyl','cylinders')
+
+print(myDatashell.array)
+
+myDatashell.five_figure_summary()
+
+# =============================================================================
+# Data as Attributes
+# =============================================================================
+
+us_life_expectancy = 'https://assets.datacamp.com/production/repositories/2097/datasets/5dd3a8250688a4f08306206fa1d40f63b66bc8a9/us_life_expectancy.csv'
+
+# Import numpy as np, pandas as pd
+import numpy as np
+import pandas as pd
+
+# Create class: DataShell
+class DataShell:
+  
+    # Define initialization method
+    def __init__(self, filepath):
+        # Set filepath as instance variable  
+        self.filepath = filepath
+        # Set data_as_csv as instance variable
+        self.data_as_csv = pd.read_csv(filepath)
+
+# Instantiate DataShell as us_data_shell
+us_data_shell = DataShell(us_life_expectancy)
+
+# Print your object's data_as_csv attribute
+print(us_data_shell.data_as_csv)
+
+#Now your classes have the ability of storing data as instance variables, which means you can execute methods on them!
+
+# Renaming Columns
+
+# Create class DataShell
+class DataShell:
+  
+    # Define initialization method
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self.data_as_csv = pd.read_csv(filepath)
+    
+    # Define method rename_column, with arguments self, column_name, and new_column_name
+    def rename_column(self, column_name, new_column_name):
+        self.data_as_csv.columns = self.data_as_csv.columns.str.replace(column_name, new_column_name)
+
+# Instantiate DataShell as us_data_shell with argument us_life_expectancy
+us_data_shell = DataShell(us_life_expectancy)
+
+# Print the datatype of your object's data_as_csv attribute
+print(us_data_shell.data_as_csv.dtypes)
+
+# Rename your objects column 'code' to 'country_code'
+us_data_shell.rename_column('code', 'country_code')
+
+# Again, print the datatype of your object's data_as_csv attribute
+print(us_data_shell.data_as_csv.dtypes)
+
+#Self-Describing DataShells
+
+# Create class DataShell
+class DataShell:
+
+    # Define initialization method
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self.data_as_csv = pd.read_csv(filepath)
+
+    # Define method rename_column, with arguments self, column_name, and new_column_name
+    def rename_column(self, column_name, new_column_name):
+        self.data_as_csv.columns = self.data_as_csv.columns.str.replace(column_name, new_column_name)
+        
+    # Define get_stats method, with argument self
+    def get_stats(self):
+        # Return a description data_as_csv
+        return self.data_as_csv.describe()
+    
+# Instantiate DataShell as us_data_shell
+us_data_shell = DataShell(us_life_expectancy)
+
+# Print the output of your objects get_stats method
+print(us_data_shell.get_stats())
+
+# =============================================================================
+# Inheritance & Polymorphism
+# =============================================================================
+
+#Inheritance - A class that takes on attributes of from another class, 'parent' 
+#class and adds some more of it's own functionality 
 
 
+# Create a class Animal
+class Animal:
+	def __init__(self, name):
+		self.name = name
+
+# Create a class Mammal, which inherits from Animal
+class Mammal(Animal):
+	def __init__(self, name, animal_type):
+		self.animal_type = animal_type
+
+# Create a class Reptile, which also inherits from Animal
+class Reptile(Animal):
+	def __init__(self, name, animal_type):
+		self.animal_type = animal_type
+
+# Instantiate a mammal with name 'Daisy' and animal_type 'dog': daisy
+daisy = Mammal('Daisy', 'dog')
+
+# Instantiate a reptile with name 'Stella' and animal_type 'alligator': stella
+stella = Reptile('Stella', 'alligator')
+
+# Print both objects
+print(daisy)
+print(stella)
+
+# Another example 
+
+# Create a class Vertebrate
+class Vertebrate:
+    spinal_cord = True
+    def __init__(self, name):
+        self.name = name
+
+# Create a class Mammal, which inherits from Vertebrate
+class Mammal(Vertebrate):
+    def __init__(self, name, animal_type):
+        self.animal_type = animal_type
+        self.temperature_regulation = True
+
+# Create a class Reptile, which also inherits from Vertebrate
+class Reptile(Vertebrate):
+    def __init__(self, name, animal_type):
+        self.animal_type = animal_type
+        self.temperature_regulation = False
+
+# Instantiate a mammal with name 'Daisy' and animal_type 'dog': daisy
+daisy = Mammal('Daisy', 'dog')
+
+# Instantiate a reptile with name 'Stella' and animal_type 'alligator': stella
+stella = Reptile('Stella', 'alligator')
+
+# Print stella's attributes spinal_cord and temperature_regulation
+print("Stella Spinal cord: " + str(stella.spinal_cord))
+print("Stella temperature regulation: " + str(stella.temperature_regulation))
+
+# Print daisy's attributes spinal_cord and temperature_regulation
+print("Daisy Spinal cord: " + str(daisy.spinal_cord))
+print("Daisy temperature regulation: " + str(daisy.temperature_regulation))
+
+# =============================================================================
+# Inheritance with DataShells
+# =============================================================================
+
+# DataShell class
+
+class DataShell:
+    def __init__(self, filename):
+        self.filename = filename
+
+    def create_datashell(self):
+        data_array = np.genfromtxt(self.filename, delimiter=',', dtype=None)
+        self.array = data_array
+        return self.array
+    
+    def show_shell(self):
+        print(self.array)
+
+    def rename_column(self, old_colname, new_colname):
+        for index, value in enumerate(self.array[0]):
+            if value == old_colname.encode('UTF-8'):
+                self.array[0][index] = new_colname
+        return self.array
+
+    def five_figure_summary(self,col_position):
+        statistics = stats.describe(self.array[1:,col_position].astype(np.float))
+        return f"Five-figure stats of column {col_position}: {statistics}"
+
+# DataStDev will now inherit from DataShell
+        
+class DataStDev(DataShell):
+    def __init__(self,filename):
+        DataShell.filename = filename
+        
+    def get_stdev(self,col_position):
+        column = self.array[1:,col_position].astype(np.float)
+        stdev = np.ndarray.std(column,axis=0)
+        return f"Standard Deviation of column {col_position}: {stdev}"
+
+#So now we have a class that takes in all the other aspects of DataShell, but 
+#has standard deviation also. 
+#
+#In the constructor usually, we have self.filename but now we have DataShell.filename.
+#When we initialize the class with mtcars.csv, what we are really doing is pulling in
+#the DataShell to do the work of initialization and running through all of our
+#activations. 
+
+my_st_dev_shell = DataStDev(us_life_expectancy)
+
+my_st_dev_shell.create_datashell()
+
+my_st_dev_shell.get_stdev(3)
+
+# =============================================================================
+# Abstract Class DataShell
+# =============================================================================
+
+# Load numpy as np and pandas as pd
+import numpy as np
+import pandas as pd
+
+# Create class: DataShell
+class DataShell:
+    def __init__(self, inputFile):
+        self.file = inputFile
+
+# Instantiate DataShell as my_data_shell
+my_data_shell = DataShell(us_life_expectancy)
+
+# Print my_data_shell
+print(my_data_shell)
+
+# =============================================================================
+# Abstract Class DataShell II
+# =============================================================================
 
 
+# Load numpy as np and pandas as pd
+import numpy as np
+import pandas as pd
 
+# Create class: DataShell
+class DataShell:
+    def __init__(self, inputFile):
+        self.file = inputFile
 
+# Create class CsvDataShell, which inherits from DataShell
+class CsvDataShell(DataShell):
+    # Initialization method with arguments self, inputFile
+    def __init__(self, inputFile):
+        # Instance variable data
+        self.data = pd.read_csv(inputFile)
 
+# Instantiate CsvDataShell as us_data_shell, passing us_life_expectancy as argument
+us_data_shell = CsvDataShell(us_life_expectancy)
 
+# Print us_data_shell.data
+print(us_data_shell.data)
 
+# =============================================================================
+# Composition
+# =============================================================================
 
+import pandas 
 
+class DataShell:
+    def __init__(self, filename):
+        self.filename = filename
+        
+    def create_datashell(self):
+        data_array = np.genfromtxt(self.filename, delimiter=',', dtype=None)
+        self.array = data_array
+        return self.array
+    
+class DataShellComposed:
+    def __init__(self, filename):
+        self.filename = filename
+    
+    def create_datashell(self):
+        self.df = pandas.read_csv()
+        return self.df
 
+# =============================================================================
+# Composition and Inheritance I
+# =============================================================================
 
+# Define abstract class DataShell
+class DataShell:
+    # Class variable family
+    family = 'DataShell'
+    # Initialization method with arguments, and instance variables
+    def __init__(self, name, filepath): 
+        self.name = name
+        self.filepath = filepath
 
+# Define class CsvDataShell      
+class CsvDataShell(DataShell):
+    # Initialization method with arguments self, name, filepath
+    def __init__(self, name, filepath):
+        # Instance variable data
+        self.data = pd.read_csv(filepath)
+        # Instance variable stats
+        self.stats = self.data.describe()
 
+# Instantiate CsvDataShell as us_data_shell
+us_data_shell = CsvDataShell("US", us_life_expectancy)
 
+# Print us_data_shell.stats
+print(us_data_shell.stats)
 
+# =============================================================================
+# Composition and Inheritance II
+# =============================================================================
 
+france_life_expectancy = 'https://assets.datacamp.com/production/repositories/2097/datasets/e3620bc33a17d7ce5cf0ae87e723171284c81df3/france_life_expectancy.csv'
 
+# Define abstract class DataShell
+class DataShell:
+    family = 'DataShell'
+    def __init__(self, name, filepath): 
+        self.name = name
+        self.filepath = filepath
 
+# Define class CsvDataShell
+class CsvDataShell(DataShell):
+    def __init__(self, name, filepath):
+        self.data = pd.read_csv(filepath)
+        self.stats = self.data.describe()
 
+# Define class TsvDataShell
+class TsvDataShell(DataShell):
+    # Initialization method with arguments self, name, filepath
+    def __init__(self, name, filepath):
+        # Instance variable data
+        self.data = pd.read_table(filepath)
+        # Instance variable stats
+        self.stats = self.data.describe()
 
+# Instantiate CsvDataShell as us_data_shell, print us_data_shell.stats
+us_data_shell = CsvDataShell("US", us_life_expectancy)
+print(us_data_shell.stats)
 
-
-
-
-
-
-
-
-
-
+# Instantiate TsvDataShell as france_data_shell, print france_data_shell.stats
+france_data_shell = TsvDataShell('France', france_life_expectancy)
+print(france_data_shell.stats)
 
 
