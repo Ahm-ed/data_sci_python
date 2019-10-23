@@ -28,11 +28,13 @@ Created on Fri Aug 16 09:55:27 2019
 
 import numpy as np
 
-input_data = np.array([2, 3])
+input_data = np.array([2, 3]) # These are the data points for 1 person. 2 for predictor1 and 3 for predictor 2
 
 weights = {'node_0': np.array([1, 1]),
            'node_1': np.array([-1, 1]),
            'output': np.array([2, -1])}
+
+# the weights are the numbers going to the node
 
 node_0_value = (input_data * weights['node_0']).sum()
 node_1_value = (input_data * weights['node_1']).sum()
@@ -538,6 +540,7 @@ import keras
 from keras.layers import Dense
 from keras.models import Sequential
 
+
 auto = pd.read_csv('data/auto-mpg.csv', na_values = '?').dropna()
 X = auto.drop(['car name', 'mpg'], axis = 1).values
 y = auto['mpg']
@@ -556,6 +559,180 @@ model.add(Dense(32, activation = 'relu'))
 
 # Add the output layer
 model.add(Dense(1))
+
+ 
+# =============================================================================
+# Compiling and fitting a model
+# =============================================================================
+
+#After you specify a model, the next step is to compile it. Which sets up 
+#the network for optimization, for instance creating an internal function to do
+#backpropagation efficiently. 
+
+#The compile argument has two different arguments for you to choose. FIrst, 
+#specify which optimizer to use, which controls the learning rate. Adam is 
+#an excellent choice as a go-to optimizer. 
+#
+#Adam adjusts the learning rate as it does gradient descent, to ensure 
+#reasonable values through out the weight optimization process. 
+#
+#The second thing you specify is the loss function. MSE is the most common
+#choice for regression problems 
+
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+#After compiling, you can fit it. That is applying backpropagation and 
+#gradient descent with your data to update the weights. 
+
+#The fit step looks similar to sci-kit's learn fit, though it has more options
+
+# Even with Adam optimizer, it can improve your optimization if you scale all 
+# the data so that each feature, is on average, about similar sized values. 
+
+#One common approach is to subtract each feature by the feature's mean and divide
+#by it's standard deviation. 
+
+model.fit(X, y)
+
+# When you run this, you will see some output showing the optimization's progress
+# as it fit's the data. 
+# It's like a log showing model performaance on the tranining data as we update 
+# the model weights 
+
+# -----------------------------------------------------------------------------
+# Import necessary modules
+import keras
+from keras.layers import Dense
+from keras.models import Sequential
+
+# Specify the model
+n_cols = predictors.shape[1]
+model = Sequential()
+model.add(Dense(50, activation='relu', input_shape = (n_cols,)))
+model.add(Dense(32, activation='relu'))
+model.add(Dense(1))
+
+# Compile the model
+model.compile(optimizer = 'adam', loss = 'mean_squared_error')
+
+# Verify that model contains information from compiling
+print("Loss function: " + model.loss)
+
+# Fit the model
+model.fit(predictors, target)
+
+# =============================================================================
+# Classification models
+# =============================================================================
+
+#For categorical problems 
+#1. You can set the loss function to 'categorical_crossentropy' instead of 'mean_squared_error' 
+#Similar to log loss, small is better. It's a bit hard to intepret. So you can 
+#add the argument metric = ['accuracy'] to compile for easy to understand diagnostics. 
+#This will basically print out the accuracy score at the end of each epoch, 
+#which makes it easier to understand the models progress. 
+#
+#2. Need to modify the last layer so that it has a separate node for each 
+#potential outcome. You also change the activation funtion to 'softmax'. 
+#The softmax activation function ensures that the predictions sum to 1, so 
+#they can be interpreted like probabilities. 
+#
+#Outcomes(target) in a single column is common. But in general we will want to
+#convert categoricals in Keras to a format with a separate column for each output. 
+#Keras has a function to do that. 
+
+#This format is consistent with the fact that your model will have a separate 
+#node for in the output for each possible class. 
+
+# so it will have a dummy variable structure (one-hot encoding)
+
+from keras.utils import to_categorical
+
+data = pd.read_csv('data/diabetes.csv')
+predictors = data.drop(['Outcome'], axis=1).as_matrix()
+target = to_categorical(data.Outcome)
+
+n_cols = predictors.shape[1]
+model = Sequential()
+model.add(Dense(100, activation='relu', input_shape = (n_cols,)))
+model.add(Dense(100, activation='relu'))
+model.add(Dense(100, activation='relu'))
+model.add(Dense(2, activation='softmax'))
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model.fit(predictors, target)
+
+# =============================================================================
+# Import necessary modules
+import keras
+from keras.layers import Dense
+from keras.models import Sequential
+from keras.utils import to_categorical
+
+df = pd.read_csv('data/titanickaggle.csv').drop(['Name', 'Cabin','Ticket', 'PassengerId','Sex','Embarked'], axis=1)
+
+predictors = df.drop(['Survived'], axis=1).as_matrix()
+n_cols = predictors.shape[1]
+# Convert the target to categorical: target
+target = to_categorical(df.Survived)
+
+# Set up the model
+model = Sequential()
+
+# Add the first layer
+model.add(Dense(32, activation='relu', input_shape=(n_cols,)))
+
+# Add the output layer
+model.add(Dense(2, activation='softmax'))
+
+# Compile the model
+model.compile(optimizer='sgd', 
+              loss='categorical_crossentropy', 
+              metrics=['accuracy'])
+
+# Fit the model
+model.fit(predictors, target)
+
+# =============================================================================
+# Saving, reloading and using your Model
+# =============================================================================
+from keras.models import load_model
+
+model.save('data/models/model_file.h5')
+
+my_model = load_model('data/models/model_file.h5')
+
+predictions = my_model.predict(data_to_predict_with)
+
+probability_true = predictions[:,1]
+
+#Verifying model structure
+
+my_model.summary()
+
+# =============================================================================
+# Specify, compile, and fit the model
+model = Sequential()
+model.add(Dense(32, activation='relu', input_shape = (n_cols,)))
+model.add(Dense(2, activation='softmax'))
+model.compile(optimizer='sgd', 
+              loss='categorical_crossentropy', 
+              metrics=['accuracy'])
+model.fit(predictors, target)
+
+# Calculate predictions: predictions
+predictions = model.predict(pred_data)
+
+# Calculate predicted probability of survival: predicted_prob_true
+predicted_prob_true = predictions[:,1]
+
+# print predicted_prob_true
+print(predicted_prob_true)
+
+
+
+
+
+
 
 
 
